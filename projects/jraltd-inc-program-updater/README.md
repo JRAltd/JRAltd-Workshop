@@ -67,6 +67,13 @@ elevation") instead of prompting. Two ways around it:
   (or just double-click the exe in File Explorer) — this triggers the UAC prompt as
   expected.
 
+## Distribution
+
+To hand this app to other people (not just run it from source), see
+[`packaging/README.md`](packaging/README.md): publish a self-contained exe (no .NET
+install required on the recipient's machine), then optionally wrap it in a proper
+Inno Setup installer with Start Menu shortcuts and an uninstaller.
+
 ## Architecture
 
 ```

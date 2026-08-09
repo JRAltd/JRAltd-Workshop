@@ -2,6 +2,10 @@
 bin/
 obj/
 
+# Packaging output (see packaging/README.md to regenerate)
+packaging/publish/
+packaging/Output/
+
 # Visual Studio / Rider
 .vs/
 .idea/
