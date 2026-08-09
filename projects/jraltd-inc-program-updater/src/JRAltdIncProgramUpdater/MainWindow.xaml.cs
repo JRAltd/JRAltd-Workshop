@@ -255,7 +255,23 @@ public partial class MainWindow : Window
                 }
 
                 StatusText.Text = $"Verifying {pkg.Name}...";
-                var installedVersion = await _winget.GetInstalledVersionAsync(pkg.Id);
+
+                // A package winget could never read a version for in the first place
+                // (shown as "Unknown" in the original scan) can't be proven to have
+                // changed by comparing version strings -- there's nothing to compare
+                // against, so fall back to trusting winget's own reported success
+                // rather than permanently failing something that likely did work.
+                if (string.IsNullOrWhiteSpace(pkg.CurrentVersion) ||
+                    string.Equals(pkg.CurrentVersion, "Unknown", StringComparison.OrdinalIgnoreCase))
+                {
+                    pkg.Status = UpdateStatus.Succeeded;
+                    pkg.StatusDetail = "Updated (installed version could not be tracked before or after, so this is based on winget's reported result)";
+                    _updates.Remove(pkg);
+                    _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
+                    continue;
+                }
+
+                var installedVersion = await GetInstalledVersionWithRetryAsync(pkg.Id, pkg.CurrentVersion);
                 var verified = !string.IsNullOrWhiteSpace(installedVersion) &&
                                 !string.Equals(installedVersion, pkg.CurrentVersion, StringComparison.OrdinalIgnoreCase);
 
@@ -283,6 +299,34 @@ public partial class MainWindow : Window
             SetButtonsEnabled(true);
             _isBusy = false;
         }
+    }
+
+    /// <summary>
+    /// Some installers finish and exit before Windows' installed-programs registry
+    /// entry is fully updated (e.g. a deferred MSI custom action completing a moment
+    /// after the main process exits), so checking the installed version once,
+    /// immediately, can catch it mid-update and see the stale pre-upgrade version.
+    /// Retries a few times with a short delay before giving up.
+    /// </summary>
+    private async Task<string?> GetInstalledVersionWithRetryAsync(string packageId, string previousVersion)
+    {
+        string? lastSeen = null;
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (attempt > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+
+            lastSeen = await _winget.GetInstalledVersionAsync(packageId);
+            if (!string.IsNullOrWhiteSpace(lastSeen) &&
+                !string.Equals(lastSeen, previousVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                return lastSeen;
+            }
+        }
+
+        return lastSeen;
     }
 
     private void SetButtonsEnabled(bool enabled)
