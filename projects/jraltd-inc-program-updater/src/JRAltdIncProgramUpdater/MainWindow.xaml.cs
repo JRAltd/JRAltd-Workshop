@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Windows;
-using WindowsSystemUpdate.Models;
-using WindowsSystemUpdate.Services;
+using JRAltdIncProgramUpdater.Models;
+using JRAltdIncProgramUpdater.Services;
 
-namespace WindowsSystemUpdate;
+namespace JRAltdIncProgramUpdater;
 
 public partial class MainWindow : Window
 {

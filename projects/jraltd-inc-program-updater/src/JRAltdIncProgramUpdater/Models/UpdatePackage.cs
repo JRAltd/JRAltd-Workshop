@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace WindowsSystemUpdate.Models;
+namespace JRAltdIncProgramUpdater.Models;
 
 public sealed class UpdatePackage : INotifyPropertyChanged
 {

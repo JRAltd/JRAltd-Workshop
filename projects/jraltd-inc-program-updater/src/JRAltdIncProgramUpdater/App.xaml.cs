@@ -1,7 +1,7 @@
 using System.Windows;
-using WindowsSystemUpdate.Services;
+using JRAltdIncProgramUpdater.Services;
 
-namespace WindowsSystemUpdate;
+namespace JRAltdIncProgramUpdater;
 
 public partial class App : Application
 {

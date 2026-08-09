@@ -1,4 +1,4 @@
-namespace WindowsSystemUpdate.Models;
+namespace JRAltdIncProgramUpdater.Models;
 
 public enum UpdateStatus
 {

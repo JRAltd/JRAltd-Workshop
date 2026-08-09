@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
 
-namespace WindowsSystemUpdate.Services;
+namespace JRAltdIncProgramUpdater.Services;
 
 /// <summary>
 /// Runtime elevation checks and the relaunch-as-admin fallback. app.manifest already

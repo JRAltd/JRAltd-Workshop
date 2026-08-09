@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using WindowsSystemUpdate.Models;
+using JRAltdIncProgramUpdater.Models;
 
-namespace WindowsSystemUpdate.Converters;
+namespace JRAltdIncProgramUpdater.Converters;
 
 public sealed class UpdateStatusToTextConverter : IValueConverter
 {

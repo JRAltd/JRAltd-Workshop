@@ -6,8 +6,8 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>WindowsSystemUpdate</RootNamespace>
-    <AssemblyName>WindowsSystemUpdate</AssemblyName>
+    <RootNamespace>JRAltdIncProgramUpdater</RootNamespace>
+    <AssemblyName>JRAltdIncProgramUpdater</AssemblyName>
 
     <!--
       requireAdministrator lives in app.manifest. WinGet upgrades routinely need to

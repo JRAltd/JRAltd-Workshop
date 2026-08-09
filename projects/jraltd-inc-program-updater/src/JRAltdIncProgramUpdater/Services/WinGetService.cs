@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-using WindowsSystemUpdate.Models;
+using JRAltdIncProgramUpdater.Models;
 
-namespace WindowsSystemUpdate.Services;
+namespace JRAltdIncProgramUpdater.Services;
 
 /// <summary>
 /// Thin wrapper around the `winget` CLI (Windows Package Manager / App Installer).

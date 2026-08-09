@@ -22,7 +22,7 @@ Windows machine before relying on it.
 ## Build & run
 
 ```
-cd src/WindowsSystemUpdate
+cd src/JRAltdIncProgramUpdater
 dotnet build
 dotnet run
 ```
@@ -56,7 +56,7 @@ elevation") instead of prompting. Two ways around it:
 - Or build once and launch the exe in a way that goes through `ShellExecute`:
   ```
   dotnet build
-  Start-Process .\bin\Debug\net8.0-windows\WindowsSystemUpdate.exe -Verb RunAs
+  Start-Process .\bin\Debug\net8.0-windows\JRAltdIncProgramUpdater.exe -Verb RunAs
   ```
   (or just double-click the exe in File Explorer) — this triggers the UAC prompt as
   expected.
@@ -64,7 +64,7 @@ elevation") instead of prompting. Two ways around it:
 ## Architecture
 
 ```
-src/WindowsSystemUpdate/
+src/JRAltdIncProgramUpdater/
 ├── app.manifest              # requireAdministrator + supported OS list
 ├── App.xaml(.cs)             # startup elevation check, theme resources
 ├── MainWindow.xaml(.cs)      # update list UI, check/update actions, per-package progress loop
