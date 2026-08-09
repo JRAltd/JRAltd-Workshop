@@ -5,11 +5,18 @@ publish` step.
 
 ## 1. Publish a self-contained executable
 
-From `src/JRAltdIncProgramUpdater/`:
+From `src/JRAltdIncProgramUpdater/`, in PowerShell (one line — PowerShell's
+line-continuation character is a backtick `` ` ``, not `^`, which is cmd.exe-only):
 
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ..\..\packaging\publish
 ```
-dotnet publish -c Release -r win-x64 --self-contained true ^
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true ^
+
+Or, if you'd rather split it across lines in PowerShell, use backticks instead of `^`:
+
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
   -o ..\..\packaging\publish
 ```
 
