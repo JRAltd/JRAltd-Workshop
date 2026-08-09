@@ -52,6 +52,28 @@ public sealed class WinGetService
     }
 
     /// <summary>
+    /// Known winget failures that a retry or a fresh "Check for Updates" scan won't
+    /// fix on their own -- winget itself is refusing to proceed, for reasons outside
+    /// this app's control. Matched (in order, first hit wins) against every
+    /// stdout/stderr line winget writes; the paired explanation is what callers show
+    /// instead of winget's raw one-liner. Extend this list as new non-retryable
+    /// patterns turn up in the wild rather than treating them as ordinary failures.
+    /// </summary>
+    private static readonly (string Pattern, string Explanation)[] NonRetryablePatterns =
+    {
+        ("hash does not match",
+            "WinGet's listing for this package has a stale installer hash (the download doesn't match what " +
+            "WinGet expects), and refuses to install it while running elevated -- a WinGet security check, " +
+            "not something this app can override. Update it manually from the publisher instead, or check " +
+            "winget-pkgs on GitHub for a fix to this package's manifest."),
+        ("install technology is different",
+            "WinGet found a newer version, but it uses a different installer technology than what's currently " +
+            "installed (e.g. switched from an EXE installer to MSI, or vice versa), so it can't upgrade in " +
+            "place. Uninstall the current version first, then install the new one -- via WinGet " +
+            "(winget install) or the publisher directly."),
+    };
+
+    /// <summary>
     /// Upgrades a single package. <paramref name="progress"/>, if supplied, receives each
     /// line winget writes to stdout/stderr as it arrives (e.g. "Downloading", "Installing"),
     /// so callers can show live per-package status. There's no guaranteed line format or
@@ -59,10 +81,10 @@ public sealed class WinGetService
     /// percentage. <c>Succeeded</c> reflects winget's own exit code only; it does not by
     /// itself confirm the installed version actually changed — pair with
     /// <see cref="GetInstalledVersionAsync"/> to verify. <c>BlockedByWinGet</c> is true when
-    /// the failure is winget itself refusing to proceed (currently: an installer hash
-    /// mismatch) rather than something a retry or a fresh scan might resolve on its own —
-    /// callers can use this to stop offering the package for upgrade instead of surfacing it
-    /// as a normal, retryable failure.
+    /// the failure matches a <see cref="NonRetryablePatterns"/> entry — winget itself
+    /// refusing to proceed, rather than something a retry or a fresh scan might resolve on
+    /// its own — callers can use this to stop offering the package for upgrade instead of
+    /// surfacing it as a normal, retryable failure.
     /// </summary>
     public async Task<(bool Succeeded, bool BlockedByWinGet)> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
@@ -74,18 +96,22 @@ public sealed class WinGetService
         var args = $"upgrade --id \"{packageId}\" --exact --include-unknown --silent " +
                    "--accept-source-agreements --accept-package-agreements";
 
-        // Recognized so a hash-mismatch failure gets a plain-language explanation
-        // below, instead of just winget's one-line error, and so the caller can treat
-        // it as non-retryable. There is deliberately no way to bypass this from here:
-        // winget itself refuses to override a failed installer hash check while
-        // running elevated, by design -- this app runs elevated for every upgrade
-        // (see app.manifest), so this can't be worked around, only explained.
-        var sawHashMismatch = false;
+        // There is deliberately no attempt to work around any of these once matched:
+        // each is winget itself refusing to proceed, by design, not a transient
+        // failure this app could retry past.
+        string? matchedExplanation = null;
         var wrappedProgress = new Progress<string>(line =>
         {
-            if (line.Contains("hash does not match", StringComparison.OrdinalIgnoreCase))
+            if (matchedExplanation is null)
             {
-                sawHashMismatch = true;
+                foreach (var (pattern, explanation) in NonRetryablePatterns)
+                {
+                    if (line.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchedExplanation = explanation;
+                        break;
+                    }
+                }
             }
 
             progress?.Report(line);
@@ -97,16 +123,12 @@ public sealed class WinGetService
         try
         {
             var (exitCode, _) = await RunAsync(args, wrappedProgress, timeoutCts.Token);
-            if (exitCode != 0 && sawHashMismatch)
+            if (exitCode != 0 && matchedExplanation is not null)
             {
-                progress?.Report(
-                    "WinGet's listing for this package has a stale installer hash (the download doesn't match " +
-                    "what WinGet expects), and refuses to install it while running elevated -- a WinGet security " +
-                    "check, not something this app can override. Update it manually from the publisher instead, " +
-                    "or check winget-pkgs on GitHub for a fix to this package's manifest.");
+                progress?.Report(matchedExplanation);
             }
 
-            return (exitCode == 0, sawHashMismatch && exitCode != 0);
+            return (exitCode == 0, exitCode != 0 && matchedExplanation is not null);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
