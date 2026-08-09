@@ -27,8 +27,9 @@ dotnet build
 dotnet run
 ```
 
-Windows will prompt for administrator elevation on launch (see below) — accept it for
-the app to work.
+`dotnet run` only works here if your terminal itself is already running **as
+Administrator** — see the elevation note below for why, and for the alternative if
+you'd rather not run your whole terminal elevated.
 
 ## Elevation
 
@@ -43,6 +44,22 @@ updating multiple packages:
   step, and relaunches elevated (`ElevationHelper.RelaunchElevated()`) if needed.
 - If the user declines the UAC prompt, the app shows a message and closes rather than
   running with reduced permissions.
+
+**Dev-time gotcha:** `dotnet run` launches the built exe via `CreateProcess`, which
+cannot trigger a UAC prompt — only `ShellExecute` can (double-clicking in Explorer, or
+`Start-Process -Verb RunAs`). Since the manifest requires elevation, `CreateProcess`
+just fails outright with Win32 error 740 ("The requested operation requires
+elevation") instead of prompting. Two ways around it:
+
+- Run your terminal itself **as Administrator**, then `dotnet run` works normally
+  (no further prompt needed — the child process inherits the elevated token).
+- Or build once and launch the exe in a way that goes through `ShellExecute`:
+  ```
+  dotnet build
+  Start-Process .\bin\Debug\net8.0-windows\WindowsSystemUpdate.exe -Verb RunAs
+  ```
+  (or just double-click the exe in File Explorer) — this triggers the UAC prompt as
+  expected.
 
 ## Architecture
 
