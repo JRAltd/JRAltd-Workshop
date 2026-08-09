@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>WindowsSystemUpdate</RootNamespace>
+    <AssemblyName>WindowsSystemUpdate</AssemblyName>
+
+    <!--
+      requireAdministrator lives in app.manifest. WinGet upgrades routinely need to
+      write to Program Files and HKLM, so the app is elevated from launch rather than
+      prompting per-package mid-batch. See Services/ElevationHelper.cs for the runtime
+      fallback and App.xaml.cs for the startup check.
+    -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+</Project>
