@@ -16,6 +16,9 @@
       fallback and App.xaml.cs for the startup check.
     -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- Source SVG + regeneration steps: packaging/icon/. -->
+    <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>

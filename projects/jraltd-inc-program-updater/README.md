@@ -78,6 +78,7 @@ Inno Setup installer with Start Menu shortcuts and an uninstaller.
 
 ```
 src/JRAltdIncProgramUpdater/
+├── icon.ico                  # app icon (source SVG + regen steps: packaging/icon/)
 ├── app.manifest              # requireAdministrator + supported OS list
 ├── App.xaml(.cs)             # startup elevation check, theme resources
 ├── MainWindow.xaml(.cs)      # update list UI, check/update actions, per-package progress loop

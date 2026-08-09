@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- JRAltd Inc Program Updater app icon: dark navy badge + cyan ring + cyan
+       lightning bolt, matching jraltdinc.us's palette (#0A0E17 / #2FD8EF) and the
+       bolt motif already used in the site's header logo and the app's title bar. -->
+  <circle cx="128" cy="128" r="124" fill="#0A0E17" />
+  <circle cx="128" cy="128" r="118" fill="none" stroke="#2FD8EF" stroke-width="8" />
+  <circle cx="128" cy="128" r="102" fill="none" stroke="#2FD8EF" stroke-width="2" opacity="0.35" />
+  <path
+    d="M7 2v11h3v9l7-12h-4l4-8z"
+    fill="#2FD8EF"
+    transform="translate(50,50) scale(6.5)" />
+</svg>
