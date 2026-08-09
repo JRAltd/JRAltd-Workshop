@@ -238,7 +238,19 @@ public partial class MainWindow : Window
                 var succeeded = await _winget.UpgradePackageAsync(pkg.Id, progress);
 
                 pkg.Status = succeeded ? UpdateStatus.Succeeded : UpdateStatus.Failed;
-                pkg.StatusDetail = succeeded ? "Updated" : "Update failed";
+                if (succeeded)
+                {
+                    pkg.StatusDetail = "Updated";
+                }
+                else if (string.IsNullOrWhiteSpace(pkg.StatusDetail))
+                {
+                    // No output at all from winget -- fall back to a generic message.
+                    // Otherwise keep whatever winget's last stdout/stderr line was: that's
+                    // the actual reason it failed (e.g. "No installed package found
+                    // matching input criteria"), and is what shows in the status pill's
+                    // tooltip -- hover it to see why a given package failed.
+                    pkg.StatusDetail = "Update failed (no output from winget)";
+                }
             }
 
             var succeededCount = targets.Count(t => t.Status == UpdateStatus.Succeeded);

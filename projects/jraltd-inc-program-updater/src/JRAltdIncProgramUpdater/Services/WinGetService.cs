@@ -52,8 +52,13 @@ public sealed class WinGetService
     /// </summary>
     public async Task<bool> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
-        var args = $"upgrade --id \"{packageId}\" --exact --silent " +
-                   "--accept-source-agreements --accept-package-agreements -h";
+        // --include-unknown matters here, not just for the list scan: winget's
+        // documented default is to skip upgrading a package if it can't determine
+        // the currently-installed version, even when targeted directly by --id.
+        // Without this, packages that show "Unknown" as their current version (e.g.
+        // some driver/vendor tools) silently fail to upgrade.
+        var args = $"upgrade --id \"{packageId}\" --exact --include-unknown --silent " +
+                   "--accept-source-agreements --accept-package-agreements";
         var (exitCode, _) = await RunAsync(args, progress, ct);
         return exitCode == 0;
     }
@@ -68,11 +73,13 @@ public sealed class WinGetService
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
         };
 
         using var process = new Process { StartInfo = psi };
         var stdout = new StringBuilder();
+
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null)
@@ -84,8 +91,25 @@ public sealed class WinGetService
             progress?.Report(e.Data);
         };
 
+        // RedirectStandardError alone leaves the pipe unread, which can block the
+        // child process once its stderr buffer fills, and silently drops whatever
+        // diagnostic text winget wrote there (some errors go to stderr, not stdout).
+        // Surfaced via progress (useful for diagnosing a failed upgrade) but kept out
+        // of the returned Output so it can't corrupt ParseUpgradeTable's line-by-line
+        // reading of the list command's stdout.
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (e.Data is null)
+            {
+                return;
+            }
+
+            progress?.Report(e.Data);
+        };
+
         process.Start();
         process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         await process.WaitForExitAsync(ct);
         return (process.ExitCode, stdout.ToString());
     }
