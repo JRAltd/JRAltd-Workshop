@@ -219,7 +219,11 @@ public partial class MainWindow : Window
     /// <summary>
     /// Updates packages one at a time (rather than a single `winget upgrade --all`
     /// call) so each row's Status/StatusDetail can reflect exactly which package is
-    /// currently running, succeeded, or failed.
+    /// currently running, succeeded, or failed. winget's own exit code isn't fully
+    /// trustworthy on its own (it can report success without the installed version
+    /// actually changing), so a successful exit is followed by a version check via
+    /// GetInstalledVersionAsync; only a package that's verifiably updated is removed
+    /// from the visible list, immediately rather than waiting for the whole batch.
     /// </summary>
     private async Task UpdatePackagesAsync(IReadOnlyList<UpdatePackage> targets)
     {
@@ -235,21 +239,41 @@ public partial class MainWindow : Window
                 StatusText.Text = $"Updating {i + 1} of {targets.Count}: {pkg.Name}";
 
                 var progress = new Progress<string>(line => pkg.StatusDetail = line);
-                var succeeded = await _winget.UpgradePackageAsync(pkg.Id, progress);
+                var reportedSuccess = await _winget.UpgradePackageAsync(pkg.Id, progress);
 
-                pkg.Status = succeeded ? UpdateStatus.Succeeded : UpdateStatus.Failed;
-                if (succeeded)
+                if (!reportedSuccess)
                 {
-                    pkg.StatusDetail = "Updated";
+                    pkg.Status = UpdateStatus.Failed;
+                    if (string.IsNullOrWhiteSpace(pkg.StatusDetail))
+                    {
+                        // No output at all from winget -- fall back to a generic message.
+                        // Otherwise keep whatever winget's last stdout/stderr line was:
+                        // that's the actual reason it failed (e.g. "No installed package
+                        // found matching input criteria") -- hover the status pill to see it.
+                        pkg.StatusDetail = "Update failed (no output from winget)";
+                    }
+
+                    continue;
                 }
-                else if (string.IsNullOrWhiteSpace(pkg.StatusDetail))
+
+                StatusText.Text = $"Verifying {pkg.Name}...";
+                var installedVersion = await _winget.GetInstalledVersionAsync(pkg.Id);
+                var verified = !string.IsNullOrWhiteSpace(installedVersion) &&
+                                !string.Equals(installedVersion, pkg.CurrentVersion, StringComparison.OrdinalIgnoreCase);
+
+                if (verified)
                 {
-                    // No output at all from winget -- fall back to a generic message.
-                    // Otherwise keep whatever winget's last stdout/stderr line was: that's
-                    // the actual reason it failed (e.g. "No installed package found
-                    // matching input criteria"), and is what shows in the status pill's
-                    // tooltip -- hover it to see why a given package failed.
-                    pkg.StatusDetail = "Update failed (no output from winget)";
+                    pkg.Status = UpdateStatus.Succeeded;
+                    pkg.StatusDetail = $"Updated to {installedVersion}";
+                    _updates.Remove(pkg);
+                    _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    pkg.Status = UpdateStatus.Failed;
+                    pkg.StatusDetail = installedVersion is null
+                        ? "winget reported success, but the installed version couldn't be verified afterward."
+                        : $"winget reported success, but the installed version is still {installedVersion}.";
                 }
             }
 

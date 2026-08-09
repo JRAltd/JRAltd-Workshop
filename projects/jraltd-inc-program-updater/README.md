@@ -88,24 +88,40 @@ src/JRAltdIncProgramUpdater/
 ├── Converters/
 │   └── UpdateStatusConverters.cs  # UpdateStatus -> display text / status-dot brush
 ├── Services/
-│   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade` output
+│   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade`/`list` output
 │   ├── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
-│   └── AppSettingsService.cs # loads/saves settings.json (ignored ids, auto-check interval)
+│   ├── AppSettingsService.cs # loads/saves settings.json (ignored ids, auto-check interval)
+│   └── RelayCommand.cs       # minimal ICommand, for the per-card Skip button's Command binding
 └── Themes/
     └── JRAltdTheme.xaml      # colors/styles lifted from jraltdinc.us
 ```
 
-`WinGetService` runs `winget upgrade` and `winget upgrade --id <id>` as child
-processes and parses the CLI's fixed-width table output into `UpdatePackage`
-records. It doesn't shell through `cmd.exe` or otherwise interpolate untrusted
-input into a shell string — arguments are passed directly via `ProcessStartInfo`.
+`WinGetService` runs `winget upgrade`, `winget upgrade --id <id>`, and
+`winget list --id <id>` as child processes and parses the CLI's fixed-width table
+output into `UpdatePackage` records. It doesn't shell through `cmd.exe` or otherwise
+interpolate untrusted input into a shell string — arguments are passed directly via
+`ProcessStartInfo`.
 
 **"Update All" runs packages one at a time**, not via a single `winget upgrade
 --all` call — that's what lets each row's Status column track exactly which
 package is currently updating vs. done vs. failed. Each package's `StatusDetail`
-is fed by winget's own stdout lines as they arrive (shown as a tooltip on the
-status cell); this is best-effort — winget doesn't guarantee a stable line format
-or a numeric percentage, so treat it as informational text, not a progress bar.
+is fed by winget's own stdout/stderr lines as they arrive (shown as a tooltip on
+the status cell); this is best-effort — winget doesn't guarantee a stable line
+format or a numeric percentage, so treat it as informational text, not a progress
+bar.
+
+**A "successful" upgrade is verified, not just trusted.** winget's own exit code
+isn't fully reliable — in testing, `winget upgrade --id <id> ... --silent` returned
+without hanging but without the package's installed version actually changing.
+So after an upgrade reports success, `UpdatePackagesAsync` calls
+`GetInstalledVersionAsync` (`winget list --id <id> --exact`) and compares the
+result to the package's previous version; only a package that's verifiably
+different is marked Succeeded and removed from the visible list (immediately,
+not just at the next full refresh). If winget reported success but the version
+didn't change, the package is marked Failed instead, with a status detail
+explaining the mismatch. A single upgrade is also capped at a 10-minute timeout
+(and the winget process force-killed if it's hit) in case winget is stuck on a
+prompt `--silent` doesn't cover.
 
 ## Skip / ignore packages
 

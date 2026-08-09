@@ -14,6 +14,14 @@ public sealed class WinGetService
 {
     private const string WinGetExe = "winget";
 
+    /// <summary>
+    /// Ceiling for a single package upgrade. --silent covers most installer UI, but
+    /// not every kind of prompt (e.g. some custom license agreements, or a hash-
+    /// mismatch confirmation) -- those block waiting for stdin input we never
+    /// provide, which would otherwise hang indefinitely with no feedback.
+    /// </summary>
+    private static readonly TimeSpan UpgradeTimeout = TimeSpan.FromMinutes(10);
+
     public static bool IsWinGetAvailable()
     {
         try
@@ -40,15 +48,17 @@ public sealed class WinGetService
     public async Task<IReadOnlyList<UpdatePackage>> GetAvailableUpdatesAsync(CancellationToken ct = default)
     {
         var (_, output) = await RunAsync("upgrade --include-unknown --accept-source-agreements", progress: null, ct);
-        return ParseUpgradeTable(output);
+        return ParsePackageTable(output);
     }
 
     /// <summary>
     /// Upgrades a single package. <paramref name="progress"/>, if supplied, receives each
-    /// line winget writes to stdout as it arrives (e.g. "Downloading", "Installing"), so
-    /// callers can show live per-package status. There's no guaranteed line format or
+    /// line winget writes to stdout/stderr as it arrives (e.g. "Downloading", "Installing"),
+    /// so callers can show live per-package status. There's no guaranteed line format or
     /// cadence across winget versions/sources — this is best-effort detail, not a parsed
-    /// percentage.
+    /// percentage. A true/false result reflects winget's own exit code only; it does not by
+    /// itself confirm the installed version actually changed — pair with
+    /// <see cref="GetInstalledVersionAsync"/> to verify.
     /// </summary>
     public async Task<bool> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
@@ -59,8 +69,39 @@ public sealed class WinGetService
         // some driver/vendor tools) silently fail to upgrade.
         var args = $"upgrade --id \"{packageId}\" --exact --include-unknown --silent " +
                    "--accept-source-agreements --accept-package-agreements";
-        var (exitCode, _) = await RunAsync(args, progress, ct);
-        return exitCode == 0;
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(UpgradeTimeout);
+
+        try
+        {
+            var (exitCode, _) = await RunAsync(args, progress, timeoutCts.Token);
+            return exitCode == 0;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Our own timeout fired, not an external cancellation -- winget was most
+            // likely stuck waiting for input we can't provide.
+            progress?.Report($"Timed out after {UpgradeTimeout.TotalMinutes:0} minutes waiting for winget " +
+                              "(it may be stuck on a prompt --silent doesn't cover).");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Looks up a specific package's currently-installed version via `winget list`.
+    /// Used to verify an upgrade actually took effect: winget's exit code alone isn't
+    /// fully trustworthy (e.g. it can report success for an upgrade that needs a
+    /// pending reboot to finish applying, leaving the reported installed version
+    /// unchanged in the meantime). Returns null if the package can't be found or its
+    /// version can't be parsed from the output.
+    /// </summary>
+    public async Task<string?> GetInstalledVersionAsync(string packageId, CancellationToken ct = default)
+    {
+        var (_, output) = await RunAsync($"list --id \"{packageId}\" --exact --accept-source-agreements", progress: null, ct);
+        var match = ParsePackageTable(output)
+            .FirstOrDefault(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase));
+        return string.IsNullOrWhiteSpace(match?.CurrentVersion) ? null : match.CurrentVersion;
     }
 
     private static async Task<(int ExitCode, string Output)> RunAsync(string arguments, IProgress<string>? progress, CancellationToken ct)
@@ -95,8 +136,8 @@ public sealed class WinGetService
         // child process once its stderr buffer fills, and silently drops whatever
         // diagnostic text winget wrote there (some errors go to stderr, not stdout).
         // Surfaced via progress (useful for diagnosing a failed upgrade) but kept out
-        // of the returned Output so it can't corrupt ParseUpgradeTable's line-by-line
-        // reading of the list command's stdout.
+        // of the returned Output so it can't corrupt ParsePackageTable's line-by-line
+        // reading of stdout.
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is null)
@@ -110,16 +151,40 @@ public sealed class WinGetService
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        await process.WaitForExitAsync(ct);
+
+        try
+        {
+            await process.WaitForExitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelling the wait doesn't kill the child process by itself -- without
+            // this it would keep running (or hanging) in the background indefinitely.
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // Best-effort: the process may have already exited on its own between
+                // the cancellation and this point.
+            }
+
+            throw;
+        }
+
         return (process.ExitCode, stdout.ToString());
     }
 
     /// <summary>
-    /// winget prints a fixed-width table. Column boundaries are read from the header
-    /// row's field start offsets rather than split on whitespace, since package names
-    /// and ids routinely contain spaces themselves.
+    /// Parses the fixed-width table both `winget upgrade` and `winget list` print.
+    /// Column boundaries are read from the header row's field start offsets rather
+    /// than split on whitespace, since package names and ids routinely contain
+    /// spaces themselves. Missing columns (e.g. `list` output for an up-to-date
+    /// package has no "Available" column) resolve to an empty field rather than an
+    /// error, via the same offset-not-found handling in <c>Field</c>.
     /// </summary>
-    private static IReadOnlyList<UpdatePackage> ParseUpgradeTable(string output)
+    private static IReadOnlyList<UpdatePackage> ParsePackageTable(string output)
     {
         var lines = output.Replace("\r\n", "\n").Split('\n');
         var headerIndex = Array.FindIndex(lines, l =>
@@ -150,7 +215,8 @@ public sealed class WinGetService
         {
             var line = lines[i];
             if (string.IsNullOrWhiteSpace(line) ||
-                line.Contains("upgrades available", StringComparison.OrdinalIgnoreCase))
+                line.Contains("upgrades available", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("installed package", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
