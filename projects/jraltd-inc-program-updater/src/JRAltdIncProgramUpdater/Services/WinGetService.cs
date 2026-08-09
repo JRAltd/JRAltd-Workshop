@@ -70,12 +70,38 @@ public sealed class WinGetService
         var args = $"upgrade --id \"{packageId}\" --exact --include-unknown --silent " +
                    "--accept-source-agreements --accept-package-agreements";
 
+        // Recognized so a hash-mismatch failure gets a plain-language explanation
+        // below, instead of just winget's one-line error. There is deliberately no
+        // way to bypass this from here: winget itself refuses to override a failed
+        // installer hash check while running elevated, by design -- this app runs
+        // elevated for every upgrade (see app.manifest), so this can't be worked
+        // around, only explained.
+        var sawHashMismatch = false;
+        var wrappedProgress = new Progress<string>(line =>
+        {
+            if (line.Contains("hash does not match", StringComparison.OrdinalIgnoreCase))
+            {
+                sawHashMismatch = true;
+            }
+
+            progress?.Report(line);
+        });
+
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(UpgradeTimeout);
 
         try
         {
-            var (exitCode, _) = await RunAsync(args, progress, timeoutCts.Token);
+            var (exitCode, _) = await RunAsync(args, wrappedProgress, timeoutCts.Token);
+            if (exitCode != 0 && sawHashMismatch)
+            {
+                progress?.Report(
+                    "WinGet's listing for this package has a stale installer hash (the download doesn't match " +
+                    "what WinGet expects), and refuses to install it while running elevated -- a WinGet security " +
+                    "check, not something this app can override. Update it manually from the publisher instead, " +
+                    "or check winget-pkgs on GitHub for a fix to this package's manifest.");
+            }
+
             return exitCode == 0;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
