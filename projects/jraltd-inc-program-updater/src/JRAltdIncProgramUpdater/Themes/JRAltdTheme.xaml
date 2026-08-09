@@ -253,12 +253,16 @@
 
     <DataTemplate x:Key="UpdateCardTemplate">
         <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+            <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" FontSize="14" />
                 <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,4,0,0">
                     <Run Text="{Binding Id, Mode=OneWay}" />
@@ -271,7 +275,7 @@
                 </TextBlock>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Border Style="{StaticResource StatusPill}" ToolTip="{Binding StatusDetail}">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
@@ -290,7 +294,24 @@
                         CommandParameter="{Binding}"
                         HorizontalAlignment="Right" Margin="0,6,0,0" ToolTip="Ignore this package until you reset skipped packages" />
             </StackPanel>
+
+            <!-- Only shown for a Failed package (see the DataTrigger below). A hover
+                 tooltip alone isn't enough to actually get the error text out: it's
+                 ephemeral and can't be selected/copied. A read-only TextBox looks like
+                 plain text but lets you click in, select, and copy StatusDetail
+                 (winget's real diagnostic line) directly. -->
+            <TextBox x:Name="FailureDetail" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                     Text="{Binding StatusDetail, Mode=OneWay}"
+                     IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                     Background="Transparent" BorderThickness="0" Padding="0"
+                     Foreground="#E55B5B" FontSize="11" TextWrapping="Wrap"
+                     Margin="0,8,0,0" Visibility="Collapsed" />
         </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Status}" Value="Failed">
+                <Setter TargetName="FailureDetail" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
     </DataTemplate>
 
     <!-- Thin flat scrollbar (no arrow buttons, no 3D track) instead of the default
