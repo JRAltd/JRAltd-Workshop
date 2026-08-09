@@ -24,6 +24,11 @@ DisableProgramGroupPage=yes
 ; which needs admin for most real-world upgrades); the installer needs admin too
 ; since it writes to Program Files.
 PrivilegesRequired=admin
+; The publish step targets win-x64 (see packaging/README.md), so install as a
+; genuine 64-bit app under the real Program Files -- without this, Inno Setup
+; defaults to a 32-bit installer and {autopf} resolves to Program Files (x86).
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=Output
 OutputBaseFilename=JRAltdIncProgramUpdaterSetup
 Compression=lzma
@@ -50,4 +55,10 @@ Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+; shellexec (rather than the default CreateProcess-based launch) is required here:
+; the app's manifest declares requireAdministrator, and plain CreateProcess cannot
+; elevate a child process -- it fails outright with Win32 error 740 ("The requested
+; operation requires elevation"), the same failure mode `dotnet run` hits for the
+; same reason (see README's "Dev-time gotcha" section). ShellExecute, used via this
+; flag, honors the target's embedded manifest the same way double-clicking it does.
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent shellexec
