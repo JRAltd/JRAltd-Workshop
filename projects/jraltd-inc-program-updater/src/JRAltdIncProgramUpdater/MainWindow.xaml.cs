@@ -201,7 +201,6 @@ public partial class MainWindow : Window
         }
 
         await UpdatePackagesAsync(selected);
-        await RefreshUpdatesAsync();
     }
 
     private async void UpdateAll_Click(object sender, RoutedEventArgs e)
@@ -213,7 +212,6 @@ public partial class MainWindow : Window
         }
 
         await UpdatePackagesAsync(_updates.ToList());
-        await RefreshUpdatesAsync();
     }
 
     /// <summary>
