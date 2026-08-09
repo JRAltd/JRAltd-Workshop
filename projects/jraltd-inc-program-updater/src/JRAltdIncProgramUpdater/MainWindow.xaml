@@ -6,7 +6,8 @@
         MinHeight="480" MinWidth="760"
         WindowStyle="None"
         ResizeMode="CanResize"
-        AllowsTransparency="False">
+        AllowsTransparency="False"
+        Background="{StaticResource BackgroundBrush}">
     <!--
         Set directly on this Window, not via the shared Style in JRAltdTheme.xaml:
         WindowStyle/WindowChrome have to be local values before the HWND is created,
@@ -21,7 +22,11 @@
         <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="8" />
     </shell:WindowChrome.WindowChrome>
 
-    <Border BorderBrush="{StaticResource CyanBorderBrush}" BorderThickness="1" CornerRadius="8">
+    <!-- Explicit Background here (not left to the Window's own Background, even though
+         JRAltdTheme.xaml's implicit Window Style sets one) because the gaps between
+         cards and the margins around them were showing through as white: whatever is
+         behind this Border wasn't reliably painting dark on its own. -->
+    <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource CyanBorderBrush}" BorderThickness="1" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
