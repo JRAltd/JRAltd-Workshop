@@ -82,4 +82,10 @@ public partial class MainWindow : Window
         await _winget.UpgradeAllAsync();
         await RefreshUpdatesAsync();
     }
+
+    // WindowStyle="None" removes the OS-drawn title bar buttons, so the custom title
+    // bar's minimize/close buttons need to drive the window directly.
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

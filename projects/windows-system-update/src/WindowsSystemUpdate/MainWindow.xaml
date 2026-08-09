@@ -3,43 +3,76 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Windows System Update" Height="600" Width="920"
         MinHeight="480" MinWidth="760">
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Border BorderBrush="{StaticResource CyanBorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
-            <TextBlock Text="⚡ Windows System Update" Style="{StaticResource SectionHeader}" />
-            <Border Style="{StaticResource ElevationBadge}" Margin="12,0,0,0" VerticalAlignment="Center">
-                <TextBlock x:Name="ElevationBadge" Foreground="{StaticResource CyanBrush}" FontSize="11" FontWeight="SemiBold" />
-            </Border>
-        </StackPanel>
+            <!-- Custom title bar. WindowStyle="None" + the WindowChrome attached property
+                 (set globally on the Window style in JRAltdTheme.xaml) hand chrome
+                 rendering to this Grid instead of the OS, so it isn't tinted by the
+                 user's Windows accent color. CaptionHeight there must match this
+                 Grid's Height for drag-to-move to line up. -->
+            <Grid Grid.Row="0" Height="40" Background="{StaticResource BackgroundAltBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="1"
-                    Text="Powered by WinGet. Checks for and applies package updates from this machine's configured WinGet sources."
-                    Style="{StaticResource MutedText}"
-                    Margin="0,8,0,16" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="⚡" FontSize="14" Foreground="{StaticResource CyanBrush}" Margin="0,0,8,0" />
+                    <TextBlock Text="Windows System Update" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" FontSize="13" />
+                </StackPanel>
 
-        <ListView Grid.Row="2" x:Name="UpdatesList" Style="{StaticResource CardListView}" SelectionMode="Extended">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Name" Width="240" DisplayMemberBinding="{Binding Name}" />
-                    <GridViewColumn Header="Id" Width="220" DisplayMemberBinding="{Binding Id}" />
-                    <GridViewColumn Header="Current" Width="110" DisplayMemberBinding="{Binding CurrentVersion}" />
-                    <GridViewColumn Header="Available" Width="110" DisplayMemberBinding="{Binding AvailableVersion}" />
-                    <GridViewColumn Header="Source" Width="90" DisplayMemberBinding="{Binding Source}" />
-                </GridView>
-            </ListView.View>
-        </ListView>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="MinimizeButton" Content="&#x2013;" Style="{StaticResource TitleBarButton}" Click="Minimize_Click" ToolTip="Minimize" />
+                    <Button x:Name="CloseButton" Content="&#x2715;" Style="{StaticResource TitleBarCloseButton}" Click="Close_Click" ToolTip="Close" />
+                </StackPanel>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <TextBlock x:Name="StatusText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
-            <Button Content="Check for Updates" Style="{StaticResource AccentButton}" Click="CheckForUpdates_Click" Margin="0,0,8,0" />
-            <Button Content="Update Selected" Style="{StaticResource AccentButton}" Click="UpdateSelected_Click" Margin="0,0,8,0" />
-            <Button Content="Update All" Style="{StaticResource AccentButton}" Click="UpdateAll_Click" />
-        </StackPanel>
-    </Grid>
+                <Border Grid.ColumnSpan="2" VerticalAlignment="Bottom" Height="1" Background="{StaticResource CyanBorderBrush}" />
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="24">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
+                    <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" />
+                    <Border Style="{StaticResource ElevationBadge}" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="ElevationBadge" Foreground="{StaticResource CyanBrush}" FontSize="11" FontWeight="SemiBold" />
+                    </Border>
+                </StackPanel>
+
+                <TextBlock Grid.Row="1"
+                            Text="Powered by WinGet. Checks for and applies package updates from this machine's configured WinGet sources."
+                            Style="{StaticResource MutedText}"
+                            Margin="0,8,0,16" />
+
+                <ListView Grid.Row="2" x:Name="UpdatesList" Style="{StaticResource CardListView}" SelectionMode="Extended">
+                    <ListView.View>
+                        <GridView ColumnHeaderContainerStyle="{StaticResource CardGridViewColumnHeader}">
+                            <GridViewColumn Header="Name" Width="240" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Id" Width="220" DisplayMemberBinding="{Binding Id}" />
+                            <GridViewColumn Header="Current" Width="110" DisplayMemberBinding="{Binding CurrentVersion}" />
+                            <GridViewColumn Header="Available" Width="110" DisplayMemberBinding="{Binding AvailableVersion}" />
+                            <GridViewColumn Header="Source" Width="90" DisplayMemberBinding="{Binding Source}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <TextBlock x:Name="StatusText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Button Content="Check for Updates" Style="{StaticResource AccentButton}" Click="CheckForUpdates_Click" Margin="0,0,8,0" />
+                    <Button Content="Update Selected" Style="{StaticResource AccentButton}" Click="UpdateSelected_Click" Margin="0,0,8,0" />
+                    <Button Content="Update All" Style="{StaticResource AccentButton}" Click="UpdateAll_Click" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>
