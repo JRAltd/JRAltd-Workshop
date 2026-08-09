@@ -12,11 +12,12 @@ public partial class MainWindow : Window
 {
     private readonly WinGetService _winget = new();
     private readonly ObservableCollection<UpdatePackage> _updates = new();
+    private readonly ObservableCollection<BlockedPackage> _blocked = new();
     private readonly AppSettings _settings;
     private readonly HashSet<string> _ignoredIds;
     private readonly DispatcherTimer _autoCheckTimer = new();
 
-    /// <summary>Full result set from the last WinGet check, before the ignored-packages filter.</summary>
+    /// <summary>Full result set from the last WinGet check, before the ignored/blocked filters.</summary>
     private List<UpdatePackage> _allResults = new();
 
     /// <summary>Guards against the auto-check timer firing while a check or update run is already in flight.</summary>
@@ -32,14 +33,24 @@ public partial class MainWindow : Window
     /// </summary>
     public ICommand SkipCommand { get; }
 
+    /// <summary>Bound to each Blocked-card's Unblock button; same reasoning as <see cref="SkipCommand"/>.</summary>
+    public ICommand UnblockCommand { get; }
+
     public MainWindow()
     {
         InitializeComponent();
         UpdatesList.ItemsSource = _updates;
+        BlockedList.ItemsSource = _blocked;
 
         _settings = AppSettingsService.Load();
         _ignoredIds = new HashSet<string>(_settings.IgnoredPackageIds, StringComparer.OrdinalIgnoreCase);
+        foreach (var blocked in _settings.BlockedPackages)
+        {
+            _blocked.Add(blocked);
+        }
+
         SkipCommand = new RelayCommand(SkipPackage);
+        UnblockCommand = new RelayCommand(UnblockPackage);
 
         // By the time this window exists, App.OnStartup has already enforced
         // elevation (or shut the app down), so this is purely informational.
@@ -47,6 +58,7 @@ public partial class MainWindow : Window
 
         _autoCheckTimer.Tick += async (_, _) => await AutoCheckTick();
         RestoreAutoCheckInterval();
+        UpdateSectionToggleLabels();
 
         _ = InitializeAsync();
     }
@@ -89,7 +101,7 @@ public partial class MainWindow : Window
         try
         {
             _allResults = (await _winget.GetAvailableUpdatesAsync()).ToList();
-            ApplyIgnoredFilter();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -102,11 +114,18 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Repopulates the visible list from <see cref="_allResults"/>, excluding ignored package ids.</summary>
-    private void ApplyIgnoredFilter()
+    /// <summary>
+    /// Repopulates the visible Updates list from <see cref="_allResults"/>, excluding
+    /// both skipped (<see cref="_ignoredIds"/>) and blocked (<see cref="_blocked"/>)
+    /// package ids -- a package winget refuses to install stays out of the main list
+    /// even after a fresh scan re-discovers it, until explicitly unblocked.
+    /// </summary>
+    private void ApplyFilters()
     {
+        var blockedIds = new HashSet<string>(_blocked.Select(b => b.Id), StringComparer.OrdinalIgnoreCase);
+
         _updates.Clear();
-        foreach (var pkg in _allResults.Where(p => !_ignoredIds.Contains(p.Id)))
+        foreach (var pkg in _allResults.Where(p => !_ignoredIds.Contains(p.Id) && !blockedIds.Contains(p.Id)))
         {
             _updates.Add(pkg);
         }
@@ -114,7 +133,19 @@ public partial class MainWindow : Window
         var baseText = _updates.Count == 0
             ? "Everything is up to date."
             : $"{_updates.Count} update(s) available.";
-        StatusText.Text = _ignoredIds.Count > 0 ? $"{baseText} ({_ignoredIds.Count} skipped)" : baseText;
+        var suffixParts = new List<string>();
+        if (_ignoredIds.Count > 0)
+        {
+            suffixParts.Add($"{_ignoredIds.Count} skipped");
+        }
+
+        if (_blocked.Count > 0)
+        {
+            suffixParts.Add($"{_blocked.Count} blocked");
+        }
+
+        StatusText.Text = suffixParts.Count > 0 ? $"{baseText} ({string.Join(", ", suffixParts)})" : baseText;
+        UpdateSectionToggleLabels();
     }
 
     private void SkipPackage(object? parameter)
@@ -126,7 +157,7 @@ public partial class MainWindow : Window
 
         _ignoredIds.Add(pkg.Id);
         PersistIgnoredIds();
-        ApplyIgnoredFilter();
+        ApplyFilters();
     }
 
     private void ResetSkipped_Click(object sender, RoutedEventArgs e)
@@ -139,13 +170,91 @@ public partial class MainWindow : Window
 
         _ignoredIds.Clear();
         PersistIgnoredIds();
-        ApplyIgnoredFilter();
+        ApplyFilters();
     }
 
     private void PersistIgnoredIds()
     {
         _settings.IgnoredPackageIds = _ignoredIds.ToList();
         AppSettingsService.Save(_settings);
+    }
+
+    /// <summary>
+    /// Moves a package out of the Updates list into Blocked, persisted, because
+    /// winget itself refuses to install it (currently: a stale installer hash) --
+    /// not something a retry or a fresh scan will fix, so it shouldn't keep coming
+    /// back into the main list on every "Check for Updates".
+    /// </summary>
+    private void BlockPackage(UpdatePackage pkg, string reason)
+    {
+        if (_blocked.Any(b => string.Equals(b.Id, pkg.Id, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        _blocked.Add(new BlockedPackage { Id = pkg.Id, Name = pkg.Name, Reason = reason });
+        PersistBlockedPackages();
+        _updates.Remove(pkg);
+        _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
+        UpdateSectionToggleLabels();
+    }
+
+    private void UnblockPackage(object? parameter)
+    {
+        if (parameter is not BlockedPackage blocked)
+        {
+            return;
+        }
+
+        _blocked.Remove(blocked);
+        PersistBlockedPackages();
+        UpdateSectionToggleLabels();
+        // Not re-added to _updates directly: this app only holds a Name/Id/Reason
+        // snapshot for a blocked package, not current version info, so there's
+        // nothing valid to show as a card until a real scan re-discovers it.
+        StatusText.Text = $"{blocked.Name} unblocked. Click \"Check for Updates\" to see it again.";
+    }
+
+    private void UnblockAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (_blocked.Count == 0)
+        {
+            StatusText.Text = "No packages are currently blocked.";
+            return;
+        }
+
+        _blocked.Clear();
+        PersistBlockedPackages();
+        UpdateSectionToggleLabels();
+        StatusText.Text = "All packages unblocked. Click \"Check for Updates\" to see them again.";
+    }
+
+    private void PersistBlockedPackages()
+    {
+        _settings.BlockedPackages = _blocked.ToList();
+        AppSettingsService.Save(_settings);
+    }
+
+    /// <summary>Switches between the Updates and Blocked lists (and their section-specific footer buttons).</summary>
+    private void SectionToggle_Click(object sender, RoutedEventArgs e)
+    {
+        var showBlocked = ReferenceEquals(sender, BlockedSectionToggle);
+        UpdatesSectionToggle.IsChecked = !showBlocked;
+        BlockedSectionToggle.IsChecked = showBlocked;
+
+        UpdatesList.Visibility = showBlocked ? Visibility.Collapsed : Visibility.Visible;
+        BlockedList.Visibility = showBlocked ? Visibility.Visible : Visibility.Collapsed;
+
+        ResetSkippedButton.Visibility = showBlocked ? Visibility.Collapsed : Visibility.Visible;
+        UpdateSelectedButton.Visibility = showBlocked ? Visibility.Collapsed : Visibility.Visible;
+        UpdateAllButton.Visibility = showBlocked ? Visibility.Collapsed : Visibility.Visible;
+        UnblockAllButton.Visibility = showBlocked ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void UpdateSectionToggleLabels()
+    {
+        UpdatesSectionToggle.Content = $"Updates ({_updates.Count})";
+        BlockedSectionToggle.Content = $"Blocked ({_blocked.Count})";
     }
 
     private IEnumerable<ToggleButton> AutoCheckToggles =>
@@ -237,7 +346,7 @@ public partial class MainWindow : Window
                 StatusText.Text = $"Updating {i + 1} of {targets.Count}: {pkg.Name}";
 
                 var progress = new Progress<string>(line => pkg.StatusDetail = line);
-                var reportedSuccess = await _winget.UpgradePackageAsync(pkg.Id, progress);
+                var (reportedSuccess, blockedByWinGet) = await _winget.UpgradePackageAsync(pkg.Id, progress);
 
                 if (!reportedSuccess)
                 {
@@ -249,6 +358,15 @@ public partial class MainWindow : Window
                         // that's the actual reason it failed (e.g. "No installed package
                         // found matching input criteria") -- hover the status pill to see it.
                         pkg.StatusDetail = "Update failed (no output from winget)";
+                    }
+
+                    if (blockedByWinGet)
+                    {
+                        // Not a retryable failure -- winget itself refuses this package
+                        // (e.g. a stale installer hash), so move it out of the Updates
+                        // list entirely instead of leaving it to fail the same way again
+                        // on the next "Check for Updates".
+                        BlockPackage(pkg, pkg.StatusDetail);
                     }
 
                     continue;

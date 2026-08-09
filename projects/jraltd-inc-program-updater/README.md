@@ -7,16 +7,12 @@ background, cyan accents, card-style layout, Segoe UI.
 
 ## Status
 
-WinGet integration, elevation handling, a styled UI, per-package skip/ignore, and
-scheduled auto-checks are implemented. **Not build-verified** — this was written in a
-Linux dev session. WPF apps only build/run on Windows with the .NET 8 SDK; the
-Ubuntu-packaged `dotnet-sdk-8.0` used in this session lacks the WindowsDesktop build
-targets (those ship with Microsoft's own installer, whose download domains are
-blocked by this session's network policy), so nothing here has actually been
-compiled. Every change was checked by hand — XML well-formedness, brace/paren
-balance, manual trace of bindings and event-handler wiring — but that's not a
-substitute for a real build. Build and smoke-test it on a Windows machine before
-relying on it.
+WinGet integration, elevation handling, a styled UI, per-package skip/ignore, a
+Blocked section for packages WinGet itself refuses to install, and scheduled
+auto-checks are implemented and have been built and exercised on a real Windows
+machine (this is developed from a Linux session, which can't build or run a WPF app
+at all — see below — so all verification against real WinGet output has happened on
+the user's machine across multiple rounds of testing/fixes, not in this repo).
 
 ## Requirements
 
@@ -84,14 +80,15 @@ src/JRAltdIncProgramUpdater/
 ├── MainWindow.xaml(.cs)      # update list UI, check/update actions, per-package progress loop
 ├── Models/
 │   ├── UpdatePackage.cs      # Name / Id / Version fields + mutable Status/StatusDetail (INotifyPropertyChanged)
-│   └── UpdateStatus.cs       # Pending / InProgress / Succeeded / Failed
+│   ├── UpdateStatus.cs       # Pending / InProgress / Succeeded / Failed
+│   └── BlockedPackage.cs     # Id / Name / Reason snapshot for a WinGet-refused package
 ├── Converters/
 │   └── UpdateStatusConverters.cs  # UpdateStatus -> display text / status-dot brush
 ├── Services/
 │   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade`/`list` output
 │   ├── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
-│   ├── AppSettingsService.cs # loads/saves settings.json (ignored ids, auto-check interval)
-│   └── RelayCommand.cs       # minimal ICommand, for the per-card Skip button's Command binding
+│   ├── AppSettingsService.cs # loads/saves settings.json (ignored ids, blocked packages, auto-check interval)
+│   └── RelayCommand.cs       # minimal ICommand, for the per-card Skip/Unblock buttons' Command binding
 └── Themes/
     └── JRAltdTheme.xaml      # colors/styles lifted from jraltdinc.us
 ```
@@ -134,6 +131,25 @@ want individual restore.
 
 Ignored ids are stored per-user in
 `%LOCALAPPDATA%\JRAltdIncProgramUpdater\settings.json`.
+
+## Blocked packages
+
+Separate from Skip: if an upgrade fails because **WinGet itself** refuses to
+proceed — currently detected via winget's "installer hash does not match" error, a
+security check that can't be overridden while running elevated, and isn't fixed by
+retrying or by a fresh scan (see `WinGetService.UpgradePackageAsync`'s
+`BlockedByWinGet` result) — the package is moved into a **Blocked** section instead
+of being left to fail the same way on every future check. Switch between **Updates**
+and **Blocked** via the segmented toggle next to the "Updates" heading.
+
+Each blocked card shows the actual reason (selectable/copyable, same as a failed
+update's detail text) and an **Unblock** button — unlike Skip, Blocked supports
+per-item removal, since these usually resolve upstream (a `winget-pkgs` manifest fix)
+rather than needing a manual "try it again sometime." Unblocking doesn't
+re-add the package to Updates directly (only an Id/Name/Reason snapshot is kept, not
+current version info) — click **Check for Updates** afterward to see it again.
+**Unblock All** clears the whole list at once. Blocked packages are stored per-user
+alongside the ignore list, in the same `settings.json`.
 
 ## Scheduled checks
 

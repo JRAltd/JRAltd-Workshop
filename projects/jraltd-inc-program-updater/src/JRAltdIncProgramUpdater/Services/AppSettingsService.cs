@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using JRAltdIncProgramUpdater.Models;
 
 namespace JRAltdIncProgramUpdater.Services;
 
@@ -9,6 +10,9 @@ public sealed class AppSettings
 
     /// <summary>0 = auto-check disabled.</summary>
     public int ScheduledCheckIntervalMinutes { get; set; }
+
+    /// <summary>Packages WinGet itself refuses to install (see <see cref="BlockedPackage"/>).</summary>
+    public List<BlockedPackage> BlockedPackages { get; set; } = new();
 }
 
 /// <summary>

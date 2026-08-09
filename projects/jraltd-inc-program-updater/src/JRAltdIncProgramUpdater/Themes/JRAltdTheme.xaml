@@ -314,6 +314,41 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
+    <!-- Card for the Blocked section (see UpdateCardItem's use in BlockedList,
+         MainWindow.xaml): a package WinGet itself refuses to install (currently:
+         a stale installer hash), kept out of the main Updates list. Reason uses the
+         same read-only-TextBox-as-selectable-text trick as UpdateCardTemplate's
+         FailureDetail, since it's the same "let the user copy the real error text
+         out" need. -->
+    <DataTemplate x:Key="BlockedCardTemplate">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" FontSize="14">
+                    <Run Text="{Binding Name, Mode=OneWay}" />
+                    <Run Text="  •  " Foreground="{StaticResource MutedBrush}" FontWeight="Normal" />
+                    <Run Text="{Binding Id, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" FontWeight="Normal" FontSize="12" />
+                </TextBlock>
+                <TextBox Text="{Binding Reason, Mode=OneWay}"
+                         IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                         Background="Transparent" BorderThickness="0" Padding="0"
+                         Foreground="#E55B5B" FontSize="11" TextWrapping="Wrap"
+                         Margin="0,4,0,0" />
+            </StackPanel>
+
+            <!-- Same AncestorType=Window Command-binding pattern as the Skip button
+                 above, walking up to MainWindow's UnblockCommand. -->
+            <Button Grid.Column="1" Content="Unblock" Style="{StaticResource SkipLinkButton}"
+                    Command="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=UnblockCommand}"
+                    CommandParameter="{Binding}"
+                    VerticalAlignment="Center" ToolTip="Move this package back into the Updates list (re-check to see it again)" />
+        </Grid>
+    </DataTemplate>
+
     <!-- Thin flat scrollbar (no arrow buttons, no 3D track) instead of the default
          Windows gray/beveled scrollbar. Vertical-oriented; this app's list only ever
          needs vertical scrolling. -->

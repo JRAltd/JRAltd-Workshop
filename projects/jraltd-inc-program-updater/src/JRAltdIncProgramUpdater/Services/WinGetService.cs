@@ -56,11 +56,15 @@ public sealed class WinGetService
     /// line winget writes to stdout/stderr as it arrives (e.g. "Downloading", "Installing"),
     /// so callers can show live per-package status. There's no guaranteed line format or
     /// cadence across winget versions/sources — this is best-effort detail, not a parsed
-    /// percentage. A true/false result reflects winget's own exit code only; it does not by
+    /// percentage. <c>Succeeded</c> reflects winget's own exit code only; it does not by
     /// itself confirm the installed version actually changed — pair with
-    /// <see cref="GetInstalledVersionAsync"/> to verify.
+    /// <see cref="GetInstalledVersionAsync"/> to verify. <c>BlockedByWinGet</c> is true when
+    /// the failure is winget itself refusing to proceed (currently: an installer hash
+    /// mismatch) rather than something a retry or a fresh scan might resolve on its own —
+    /// callers can use this to stop offering the package for upgrade instead of surfacing it
+    /// as a normal, retryable failure.
     /// </summary>
-    public async Task<bool> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
+    public async Task<(bool Succeeded, bool BlockedByWinGet)> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
         // --include-unknown matters here, not just for the list scan: winget's
         // documented default is to skip upgrading a package if it can't determine
@@ -71,11 +75,11 @@ public sealed class WinGetService
                    "--accept-source-agreements --accept-package-agreements";
 
         // Recognized so a hash-mismatch failure gets a plain-language explanation
-        // below, instead of just winget's one-line error. There is deliberately no
-        // way to bypass this from here: winget itself refuses to override a failed
-        // installer hash check while running elevated, by design -- this app runs
-        // elevated for every upgrade (see app.manifest), so this can't be worked
-        // around, only explained.
+        // below, instead of just winget's one-line error, and so the caller can treat
+        // it as non-retryable. There is deliberately no way to bypass this from here:
+        // winget itself refuses to override a failed installer hash check while
+        // running elevated, by design -- this app runs elevated for every upgrade
+        // (see app.manifest), so this can't be worked around, only explained.
         var sawHashMismatch = false;
         var wrappedProgress = new Progress<string>(line =>
         {
@@ -102,7 +106,7 @@ public sealed class WinGetService
                     "or check winget-pkgs on GitHub for a fix to this package's manifest.");
             }
 
-            return exitCode == 0;
+            return (exitCode == 0, sawHashMismatch && exitCode != 0);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -110,7 +114,7 @@ public sealed class WinGetService
             // likely stuck waiting for input we can't provide.
             progress?.Report($"Timed out after {UpgradeTimeout.TotalMinutes:0} minutes waiting for winget " +
                               "(it may be stuck on a prompt --silent doesn't cover).");
-            return false;
+            return (false, false);
         }
     }
 

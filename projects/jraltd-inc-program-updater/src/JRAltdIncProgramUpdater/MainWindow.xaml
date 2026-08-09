@@ -61,12 +61,30 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4" VerticalAlignment="Center">
-                    <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" />
-                    <Border Style="{StaticResource ElevationBadge}" Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock x:Name="ElevationBadge" Foreground="{StaticResource CyanBrush}" FontSize="11" FontWeight="SemiBold" />
-                    </Border>
-                </StackPanel>
+                <Grid Grid.Row="0" Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" />
+                        <Border Style="{StaticResource ElevationBadge}" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="ElevationBadge" Foreground="{StaticResource CyanBrush}" FontSize="11" FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Segmented switch between the main Updates list and packages WinGet
+                         itself has refused to install (see BlockPackage/SectionToggle_Click
+                         in MainWindow.xaml.cs). A plain WPF TabControl would need a full
+                         custom ControlTemplate to match this dark theme (same reasoning as
+                         the flat ScrollBar style below), so this reuses the existing
+                         IntervalToggle segmented-pill pattern instead of introducing one. -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton x:Name="UpdatesSectionToggle" Content="Updates" Style="{StaticResource IntervalToggle}" IsChecked="True" Click="SectionToggle_Click" />
+                        <ToggleButton x:Name="BlockedSectionToggle" Content="Blocked" Style="{StaticResource IntervalToggle}" Click="SectionToggle_Click" Margin="4,0,0,0" />
+                    </StackPanel>
+                </Grid>
 
                 <Grid Grid.Row="1" Margin="0,8,0,16">
                     <Grid.ColumnDefinitions>
@@ -91,7 +109,8 @@
 
                 <!-- A vertical stack of cards (see UpdateCardItem / UpdateCardTemplate in
                      JRAltdTheme.xaml), matching the site's .cards grid, instead of a
-                     GridView data table. -->
+                     GridView data table. Both lists occupy the same Grid cell; only one is
+                     ever Visible at a time, toggled by SectionToggle_Click. -->
                 <ListBox Grid.Row="2" x:Name="UpdatesList"
                          Background="Transparent"
                          BorderThickness="0"
@@ -100,9 +119,18 @@
                          ItemContainerStyle="{StaticResource UpdateCardItem}"
                          ItemTemplate="{StaticResource UpdateCardTemplate}" />
 
+                <ListBox Grid.Row="2" x:Name="BlockedList"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ScrollViewer.CanContentScroll="False"
+                         ItemContainerStyle="{StaticResource UpdateCardItem}"
+                         ItemTemplate="{StaticResource BlockedCardTemplate}"
+                         Visibility="Collapsed" />
+
                 <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                     <TextBlock x:Name="StatusText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
                     <Button x:Name="ResetSkippedButton" Content="Reset Skipped" Style="{StaticResource SkipLinkButton}" Click="ResetSkipped_Click" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button x:Name="UnblockAllButton" Content="Unblock All" Style="{StaticResource SkipLinkButton}" Click="UnblockAll_Click" VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed" />
                     <Button x:Name="CheckForUpdatesButton" Content="Check for Updates" Style="{StaticResource AccentButton}" Click="CheckForUpdates_Click" Margin="0,0,8,0" />
                     <Button x:Name="UpdateSelectedButton" Content="Update Selected" Style="{StaticResource AccentButton}" Click="UpdateSelected_Click" Margin="0,0,8,0" />
                     <Button x:Name="UpdateAllButton" Content="Update All" Style="{StaticResource AccentButton}" Click="UpdateAll_Click" />
