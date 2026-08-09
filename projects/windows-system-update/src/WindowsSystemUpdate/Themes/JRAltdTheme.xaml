@@ -4,8 +4,8 @@
                     xmlns:conv="clr-namespace:WindowsSystemUpdate.Converters">
 
     <!--
-        Declared here (not in MainWindow.xaml) because UpdateCardTemplate below --
-        which binds through these converters -- also lives in this dictionary.
+        Declared here, not in MainWindow.xaml, because UpdateCardTemplate below
+        (which binds through these converters) also lives in this dictionary.
         StaticResource resolves against the scope a XAML file was parsed in, not
         wherever a DataTemplate ends up applied at runtime, so the converters have to
         be visible from this file directly.
@@ -38,7 +38,7 @@
         Style-provided value has a chance to apply. Setting them via this implicit
         Style left the native OS title bar in place (tinted by the user's Windows
         accent color) with the custom title bar rendering as ordinary content
-        underneath it -- a visible double title bar. Each Window must set
+        underneath it, a visible double title bar. Each Window must set
         WindowStyle="None" + WindowChrome.WindowChrome as local values directly on
         its own <Window> tag (see MainWindow.xaml) instead.
     -->
@@ -142,7 +142,7 @@
     </Style>
 
     <!-- The update list is a vertical stack of cards (ListBox + this ItemContainerStyle
-         + UpdateCardTemplate below), not a data-grid/table -- a plain row/column table
+         + UpdateCardTemplate below), not a data-grid/table: a plain row/column table
          is what reads as "basic Windows app" regardless of color. Each card mirrors the
          site's .card class: bg-alt fill, 1px 30%-opacity cyan border that brightens to
          full cyan on hover, 10px rounded corners. -->

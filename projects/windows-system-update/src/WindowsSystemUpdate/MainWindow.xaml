@@ -8,7 +8,7 @@
         ResizeMode="CanResize"
         AllowsTransparency="False">
     <!--
-        Set directly on this Window (not via the shared Style in JRAltdTheme.xaml) --
+        Set directly on this Window, not via the shared Style in JRAltdTheme.xaml:
         WindowStyle/WindowChrome have to be local values before the HWND is created,
         or the native OS title bar stays and this custom one just renders underneath
         it. CaptionHeight below must match the title bar Grid's Height. The 0,0,0,1
