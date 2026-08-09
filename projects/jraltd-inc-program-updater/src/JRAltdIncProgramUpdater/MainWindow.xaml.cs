@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Threading;
 using JRAltdIncProgramUpdater.Models;
 using JRAltdIncProgramUpdater.Services;
@@ -21,6 +22,16 @@ public partial class MainWindow : Window
     /// <summary>Guards against the auto-check timer firing while a check or update run is already in flight.</summary>
     private bool _isBusy;
 
+    /// <summary>
+    /// Bound to each card's Skip button (CommandParameter="{Binding}" passes the
+    /// card's UpdatePackage). Command binding, not a routed Click event, because the
+    /// button lives inside a DataTemplate defined in JRAltdTheme.xaml -- a
+    /// ResourceDictionary with no code-behind class -- and Command/CommandParameter
+    /// binding is a data-binding mechanism independent of that, unlike XAML
+    /// event-attribute resolution or routed-event bubbling.
+    /// </summary>
+    public ICommand SkipCommand { get; }
+
     public MainWindow()
     {
         InitializeComponent();
@@ -28,6 +39,7 @@ public partial class MainWindow : Window
 
         _settings = AppSettingsService.Load();
         _ignoredIds = new HashSet<string>(_settings.IgnoredPackageIds, StringComparer.OrdinalIgnoreCase);
+        SkipCommand = new RelayCommand(SkipPackage);
 
         // By the time this window exists, App.OnStartup has already enforced
         // elevation (or shut the app down), so this is purely informational.
@@ -105,18 +117,9 @@ public partial class MainWindow : Window
         StatusText.Text = _ignoredIds.Count > 0 ? $"{baseText} ({_ignoredIds.Count} skipped)" : baseText;
     }
 
-    /// <summary>
-    /// Handles the Button.Click routed event bubbled up from the per-card "Skip"
-    /// button (see UpdatesList's Button.Click="SkipPackage_Click" in this file, and
-    /// the comment on that button in JRAltdTheme.xaml's UpdateCardTemplate for why
-    /// it's wired here rather than on the button itself). Because this is a bubbled
-    /// event, `sender` is the ListBox the handler is attached to, not the button that
-    /// was clicked; e.Source is the actual button, whose DataContext is the bound
-    /// UpdatePackage.
-    /// </summary>
-    private void SkipPackage_Click(object sender, RoutedEventArgs e)
+    private void SkipPackage(object? parameter)
     {
-        if (e.Source is not FrameworkElement { DataContext: UpdatePackage pkg })
+        if (parameter is not UpdatePackage pkg)
         {
             return;
         }

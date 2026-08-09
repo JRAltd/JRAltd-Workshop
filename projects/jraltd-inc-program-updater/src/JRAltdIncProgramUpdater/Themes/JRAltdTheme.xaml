@@ -280,10 +280,14 @@
                                    Foreground="{StaticResource TextBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
-                <!-- No Click handler here: this template lives in a ResourceDictionary with
-                     no code-behind, so the Click event bubbles up and is handled once at the
-                     ListBox in MainWindow.xaml (Button.Click="SkipPackage_Click") instead. -->
+                <!-- Command binding, not Click: this template lives in a ResourceDictionary
+                     with no code-behind, so there's no class to resolve a Click="Handler"
+                     attribute against. Walking up to the nearest Window finds MainWindow's
+                     SkipCommand; CommandParameter="{Binding}" passes this card's own
+                     UpdatePackage (the DataTemplate's DataContext) through to it. -->
                 <Button Content="Skip" Style="{StaticResource SkipLinkButton}"
+                        Command="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=SkipCommand}"
+                        CommandParameter="{Binding}"
                         HorizontalAlignment="Right" Margin="0,6,0,0" ToolTip="Ignore this package until you reset skipped packages" />
             </StackPanel>
         </Grid>
