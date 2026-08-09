@@ -39,27 +39,26 @@ public sealed class WinGetService
 
     public async Task<IReadOnlyList<UpdatePackage>> GetAvailableUpdatesAsync(CancellationToken ct = default)
     {
-        var (_, output) = await RunAsync("upgrade --include-unknown --accept-source-agreements", ct);
+        var (_, output) = await RunAsync("upgrade --include-unknown --accept-source-agreements", progress: null, ct);
         return ParseUpgradeTable(output);
     }
 
-    public async Task<bool> UpgradePackageAsync(string packageId, CancellationToken ct = default)
+    /// <summary>
+    /// Upgrades a single package. <paramref name="progress"/>, if supplied, receives each
+    /// line winget writes to stdout as it arrives (e.g. "Downloading", "Installing"), so
+    /// callers can show live per-package status. There's no guaranteed line format or
+    /// cadence across winget versions/sources — this is best-effort detail, not a parsed
+    /// percentage.
+    /// </summary>
+    public async Task<bool> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
         var args = $"upgrade --id \"{packageId}\" --exact --silent " +
                    "--accept-source-agreements --accept-package-agreements -h";
-        var (exitCode, _) = await RunAsync(args, ct);
+        var (exitCode, _) = await RunAsync(args, progress, ct);
         return exitCode == 0;
     }
 
-    public async Task<bool> UpgradeAllAsync(CancellationToken ct = default)
-    {
-        const string args = "upgrade --all --silent " +
-                             "--accept-source-agreements --accept-package-agreements -h";
-        var (exitCode, _) = await RunAsync(args, ct);
-        return exitCode == 0;
-    }
-
-    private static async Task<(int ExitCode, string Output)> RunAsync(string arguments, CancellationToken ct)
+    private static async Task<(int ExitCode, string Output)> RunAsync(string arguments, IProgress<string>? progress, CancellationToken ct)
     {
         var psi = new ProcessStartInfo
         {
@@ -76,10 +75,13 @@ public sealed class WinGetService
         var stdout = new StringBuilder();
         process.OutputDataReceived += (_, e) =>
         {
-            if (e.Data is not null)
+            if (e.Data is null)
             {
-                stdout.AppendLine(e.Data);
+                return;
             }
+
+            stdout.AppendLine(e.Data);
+            progress?.Report(e.Data);
         };
 
         process.Start();

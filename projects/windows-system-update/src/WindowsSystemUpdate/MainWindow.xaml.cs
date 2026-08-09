@@ -67,20 +67,60 @@ public partial class MainWindow : Window
             return;
         }
 
-        StatusText.Text = $"Updating {selected.Count} package(s)...";
-        foreach (var pkg in selected)
-        {
-            await _winget.UpgradePackageAsync(pkg.Id);
-        }
-
+        await UpdatePackagesAsync(selected);
         await RefreshUpdatesAsync();
     }
 
     private async void UpdateAll_Click(object sender, RoutedEventArgs e)
     {
-        StatusText.Text = "Updating all packages...";
-        await _winget.UpgradeAllAsync();
+        if (_updates.Count == 0)
+        {
+            StatusText.Text = "Nothing to update.";
+            return;
+        }
+
+        await UpdatePackagesAsync(_updates.ToList());
         await RefreshUpdatesAsync();
+    }
+
+    /// <summary>
+    /// Updates packages one at a time (rather than a single `winget upgrade --all`
+    /// call) so each row's Status/StatusDetail can reflect exactly which package is
+    /// currently running, succeeded, or failed.
+    /// </summary>
+    private async Task UpdatePackagesAsync(IReadOnlyList<UpdatePackage> targets)
+    {
+        SetButtonsEnabled(false);
+        try
+        {
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var pkg = targets[i];
+                pkg.Status = UpdateStatus.InProgress;
+                pkg.StatusDetail = "Starting...";
+                StatusText.Text = $"Updating {i + 1} of {targets.Count}: {pkg.Name}";
+
+                var progress = new Progress<string>(line => pkg.StatusDetail = line);
+                var succeeded = await _winget.UpgradePackageAsync(pkg.Id, progress);
+
+                pkg.Status = succeeded ? UpdateStatus.Succeeded : UpdateStatus.Failed;
+                pkg.StatusDetail = succeeded ? "Updated" : "Update failed";
+            }
+
+            var succeededCount = targets.Count(t => t.Status == UpdateStatus.Succeeded);
+            StatusText.Text = $"Finished: {succeededCount}/{targets.Count} package(s) updated.";
+        }
+        finally
+        {
+            SetButtonsEnabled(true);
+        }
+    }
+
+    private void SetButtonsEnabled(bool enabled)
+    {
+        CheckForUpdatesButton.IsEnabled = enabled;
+        UpdateSelectedButton.IsEnabled = enabled;
+        UpdateAllButton.IsEnabled = enabled;
     }
 
     // WindowStyle="None" removes the OS-drawn title bar buttons, so the custom title

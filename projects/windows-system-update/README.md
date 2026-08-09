@@ -67,9 +67,12 @@ elevation") instead of prompting. Two ways around it:
 src/WindowsSystemUpdate/
 ├── app.manifest              # requireAdministrator + supported OS list
 ├── App.xaml(.cs)             # startup elevation check, theme resources
-├── MainWindow.xaml(.cs)      # update list UI, check/update actions
+├── MainWindow.xaml(.cs)      # update list UI, check/update actions, per-package progress loop
 ├── Models/
-│   └── UpdatePackage.cs      # Name / Id / CurrentVersion / AvailableVersion / Source
+│   ├── UpdatePackage.cs      # Name / Id / Version fields + mutable Status/StatusDetail (INotifyPropertyChanged)
+│   └── UpdateStatus.cs       # Pending / InProgress / Succeeded / Failed
+├── Converters/
+│   └── UpdateStatusConverters.cs  # UpdateStatus -> display text / status-dot brush
 ├── Services/
 │   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade` output
 │   └── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
@@ -77,11 +80,17 @@ src/WindowsSystemUpdate/
     └── JRAltdTheme.xaml      # colors/styles lifted from jraltdinc.us
 ```
 
-`WinGetService` runs `winget upgrade`, `winget upgrade --id <id>`, and
-`winget upgrade --all` as child processes and parses the CLI's fixed-width table
-output into `UpdatePackage` records. It doesn't shell through `cmd.exe` or otherwise
-interpolate untrusted input into a shell string — arguments are passed directly via
-`ProcessStartInfo`.
+`WinGetService` runs `winget upgrade` and `winget upgrade --id <id>` as child
+processes and parses the CLI's fixed-width table output into `UpdatePackage`
+records. It doesn't shell through `cmd.exe` or otherwise interpolate untrusted
+input into a shell string — arguments are passed directly via `ProcessStartInfo`.
+
+**"Update All" runs packages one at a time**, not via a single `winget upgrade
+--all` call — that's what lets each row's Status column track exactly which
+package is currently updating vs. done vs. failed. Each package's `StatusDetail`
+is fed by winget's own stdout lines as they arrive (shown as a tooltip on the
+status cell); this is best-effort — winget doesn't guarantee a stable line format
+or a numeric percentage, so treat it as informational text, not a progress bar.
 
 ## Style reference
 
