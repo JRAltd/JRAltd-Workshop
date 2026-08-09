@@ -1,25 +1,32 @@
 <Window x:Class="WindowsSystemUpdate.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:conv="clr-namespace:WindowsSystemUpdate.Converters"
-        Title="Windows System Update" Height="600" Width="920"
-        MinHeight="480" MinWidth="760">
-    <Window.Resources>
-        <conv:UpdateStatusToTextConverter x:Key="StatusToTextConverter" />
-        <conv:UpdateStatusToBrushConverter x:Key="StatusToBrushConverter" />
-    </Window.Resources>
-    <Border BorderBrush="{StaticResource CyanBorderBrush}" BorderThickness="1">
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Windows System Update" Height="640" Width="960"
+        MinHeight="480" MinWidth="760"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="False">
+    <!--
+        Set directly on this Window (not via the shared Style in JRAltdTheme.xaml) --
+        WindowStyle/WindowChrome have to be local values before the HWND is created,
+        or the native OS title bar stays and this custom one just renders underneath
+        it. CaptionHeight below must match the title bar Grid's Height. The 0,0,0,1
+        GlassFrameThickness (rather than a flat 0) is a standard trick to keep the
+        window's drop shadow instead of losing it entirely.
+    -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0,0,0,1" CornerRadius="8" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{StaticResource CyanBorderBrush}" BorderThickness="1" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Custom title bar. WindowStyle="None" + the WindowChrome attached property
-                 (set globally on the Window style in JRAltdTheme.xaml) hand chrome
-                 rendering to this Grid instead of the OS, so it isn't tinted by the
-                 user's Windows accent color. CaptionHeight there must match this
-                 Grid's Height for drag-to-move to line up. -->
+            <!-- Custom title bar, replacing the OS-drawn one. -->
             <Grid Grid.Row="0" Height="40" Background="{StaticResource BackgroundAltBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -59,28 +66,16 @@
                             Style="{StaticResource MutedText}"
                             Margin="0,8,0,16" />
 
-                <ListView Grid.Row="2" x:Name="UpdatesList" Style="{StaticResource CardListView}" SelectionMode="Extended">
-                    <ListView.View>
-                        <GridView ColumnHeaderContainerStyle="{StaticResource CardGridViewColumnHeader}">
-                            <GridViewColumn Header="Name" Width="210" DisplayMemberBinding="{Binding Name}" />
-                            <GridViewColumn Header="Id" Width="190" DisplayMemberBinding="{Binding Id}" />
-                            <GridViewColumn Header="Current" Width="90" DisplayMemberBinding="{Binding CurrentVersion}" />
-                            <GridViewColumn Header="Available" Width="90" DisplayMemberBinding="{Binding AvailableVersion}" />
-                            <GridViewColumn Header="Source" Width="80" DisplayMemberBinding="{Binding Source}" />
-                            <GridViewColumn Header="Status" Width="160">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding StatusDetail}">
-                                            <Ellipse Width="8" Height="8" Margin="0,0,6,0"
-                                                     Fill="{Binding Status, Converter={StaticResource StatusToBrushConverter}}" />
-                                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusToTextConverter}}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
+                <!-- A vertical stack of cards (see UpdateCardItem / UpdateCardTemplate in
+                     JRAltdTheme.xaml), matching the site's .cards grid, instead of a
+                     GridView data table. -->
+                <ListBox Grid.Row="2" x:Name="UpdatesList"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         SelectionMode="Extended"
+                         ScrollViewer.CanContentScroll="False"
+                         ItemContainerStyle="{StaticResource UpdateCardItem}"
+                         ItemTemplate="{StaticResource UpdateCardTemplate}" />
 
                 <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                     <TextBlock x:Name="StatusText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
