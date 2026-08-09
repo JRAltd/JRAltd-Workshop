@@ -189,6 +189,68 @@
         <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
     </Style>
 
+    <!-- Small muted "text link" style button, used for the per-card Skip action so it
+         doesn't compete visually with the cyan AccentButton actions in the footer. -->
+    <Style x:Key="SkipLinkButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource TitleBarHoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource CyanBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Segmented-control-style toggle used for the auto-check interval picker
+         (Off / 30m / 1h / 6h / 24h). Same Border+ContentPresenter shape as the other
+         button styles here, with an IsChecked trigger for the active segment. -->
+    <Style x:Key="IntervalToggle" TargetType="ToggleButton">
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd"
+                            Background="{StaticResource BackgroundAltBrush}"
+                            BorderBrush="{StaticResource CyanBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource CyanBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource CyanBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource CyanBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource ButtonTextBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <DataTemplate x:Key="UpdateCardTemplate">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -209,14 +271,21 @@
                 </TextBlock>
             </StackPanel>
 
-            <Border Grid.Column="1" Style="{StaticResource StatusPill}" VerticalAlignment="Center" ToolTip="{Binding StatusDetail}">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
-                             Fill="{Binding Status, Converter={StaticResource StatusToBrushConverter}}" />
-                    <TextBlock Text="{Binding Status, Converter={StaticResource StatusToTextConverter}}"
-                               Foreground="{StaticResource TextBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
-                </StackPanel>
-            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Border Style="{StaticResource StatusPill}" ToolTip="{Binding StatusDetail}">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
+                                 Fill="{Binding Status, Converter={StaticResource StatusToBrushConverter}}" />
+                        <TextBlock Text="{Binding Status, Converter={StaticResource StatusToTextConverter}}"
+                                   Foreground="{StaticResource TextBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+                <!-- No Click handler here: this template lives in a ResourceDictionary with
+                     no code-behind, so the Click event bubbles up and is handled once at the
+                     ListBox in MainWindow.xaml (Button.Click="SkipPackage_Click") instead. -->
+                <Button Content="Skip" Style="{StaticResource SkipLinkButton}"
+                        HorizontalAlignment="Right" Margin="0,6,0,0" ToolTip="Ignore this package until you reset skipped packages" />
+            </StackPanel>
         </Grid>
     </DataTemplate>
 

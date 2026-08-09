@@ -68,10 +68,26 @@
                     </Border>
                 </StackPanel>
 
-                <TextBlock Grid.Row="1"
-                            Text="Powered by WinGet. Checks for and applies package updates from this machine's configured WinGet sources."
-                            Style="{StaticResource MutedText}"
-                            Margin="0,8,0,16" />
+                <Grid Grid.Row="1" Margin="0,8,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                                Text="Powered by WinGet. Checks for and applies package updates from this machine's configured WinGet sources."
+                                Style="{StaticResource MutedText}"
+                                VerticalAlignment="Center" />
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="Auto-check:" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ToggleButton x:Name="AutoCheckOffToggle" Content="Off" Tag="0" Style="{StaticResource IntervalToggle}" Click="AutoCheckInterval_Click" IsChecked="True" />
+                        <ToggleButton x:Name="AutoCheck30Toggle" Content="30m" Tag="30" Style="{StaticResource IntervalToggle}" Click="AutoCheckInterval_Click" Margin="4,0,0,0" />
+                        <ToggleButton x:Name="AutoCheck1hToggle" Content="1h" Tag="60" Style="{StaticResource IntervalToggle}" Click="AutoCheckInterval_Click" Margin="4,0,0,0" />
+                        <ToggleButton x:Name="AutoCheck6hToggle" Content="6h" Tag="360" Style="{StaticResource IntervalToggle}" Click="AutoCheckInterval_Click" Margin="4,0,0,0" />
+                        <ToggleButton x:Name="AutoCheck24hToggle" Content="24h" Tag="1440" Style="{StaticResource IntervalToggle}" Click="AutoCheckInterval_Click" Margin="4,0,0,0" />
+                    </StackPanel>
+                </Grid>
 
                 <!-- A vertical stack of cards (see UpdateCardItem / UpdateCardTemplate in
                      JRAltdTheme.xaml), matching the site's .cards grid, instead of a
@@ -82,10 +98,12 @@
                          SelectionMode="Extended"
                          ScrollViewer.CanContentScroll="False"
                          ItemContainerStyle="{StaticResource UpdateCardItem}"
-                         ItemTemplate="{StaticResource UpdateCardTemplate}" />
+                         ItemTemplate="{StaticResource UpdateCardTemplate}"
+                         Button.Click="SkipPackage_Click" />
 
                 <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                     <TextBlock x:Name="StatusText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Button x:Name="ResetSkippedButton" Content="Reset Skipped" Style="{StaticResource SkipLinkButton}" Click="ResetSkipped_Click" VerticalAlignment="Center" Margin="0,0,12,0" />
                     <Button x:Name="CheckForUpdatesButton" Content="Check for Updates" Style="{StaticResource AccentButton}" Click="CheckForUpdates_Click" Margin="0,0,8,0" />
                     <Button x:Name="UpdateSelectedButton" Content="Update Selected" Style="{StaticResource AccentButton}" Click="UpdateSelected_Click" Margin="0,0,8,0" />
                     <Button x:Name="UpdateAllButton" Content="Update All" Style="{StaticResource AccentButton}" Click="UpdateAll_Click" />

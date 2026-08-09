@@ -7,10 +7,16 @@ background, cyan accents, card-style layout, Segoe UI.
 
 ## Status
 
-Functional first version: WinGet integration, elevation handling, and a styled UI are
-implemented. **Not build-verified** — this was written in a Linux dev session, and WPF
-apps only build/run on Windows with the .NET 8 SDK. Build and smoke-test it on a
-Windows machine before relying on it.
+WinGet integration, elevation handling, a styled UI, per-package skip/ignore, and
+scheduled auto-checks are implemented. **Not build-verified** — this was written in a
+Linux dev session. WPF apps only build/run on Windows with the .NET 8 SDK; the
+Ubuntu-packaged `dotnet-sdk-8.0` used in this session lacks the WindowsDesktop build
+targets (those ship with Microsoft's own installer, whose download domains are
+blocked by this session's network policy), so nothing here has actually been
+compiled. Every change was checked by hand — XML well-formedness, brace/paren
+balance, manual trace of bindings and event-handler wiring — but that's not a
+substitute for a real build. Build and smoke-test it on a Windows machine before
+relying on it.
 
 ## Requirements
 
@@ -75,7 +81,8 @@ src/JRAltdIncProgramUpdater/
 │   └── UpdateStatusConverters.cs  # UpdateStatus -> display text / status-dot brush
 ├── Services/
 │   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade` output
-│   └── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
+│   ├── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
+│   └── AppSettingsService.cs # loads/saves settings.json (ignored ids, auto-check interval)
 └── Themes/
     └── JRAltdTheme.xaml      # colors/styles lifted from jraltdinc.us
 ```
@@ -91,6 +98,29 @@ package is currently updating vs. done vs. failed. Each package's `StatusDetail`
 is fed by winget's own stdout lines as they arrive (shown as a tooltip on the
 status cell); this is best-effort — winget doesn't guarantee a stable line format
 or a numeric percentage, so treat it as informational text, not a progress bar.
+
+## Skip / ignore packages
+
+Each card has a **Skip** link. Skipping a package adds its WinGet id to a persisted
+ignore list and removes it from the list immediately; it stays out of future "Check
+for Updates" results (and therefore out of "Update All") until you click **Reset
+Skipped** in the footer, which clears the whole ignore list at once. There's
+currently no per-item "unskip" — only reset-all — to keep the UI simple; ask if you
+want individual restore.
+
+Ignored ids are stored per-user in
+`%LOCALAPPDATA%\JRAltdIncProgramUpdater\settings.json`.
+
+## Scheduled checks
+
+The "Auto-check" toggle row (next to the WinGet description text) lets you pick Off /
+30m / 1h / 6h / 24h. This drives an in-app `DispatcherTimer` that re-runs "Check for
+Updates" on that interval **while the app is open** — it is not a Windows Task
+Scheduler entry, so it does nothing while the app isn't running. The selected
+interval is persisted in the same `settings.json` and restored on next launch. If you
+want checks to happen even when the app is closed (e.g. a scheduled task that
+launches the app, checks, and notifies), that's a separate, bigger feature — let me
+know if you want it built.
 
 ## Style reference
 
