@@ -25,7 +25,7 @@ public partial class App : Application
         }
 
         MessageBox.Show(
-            "Windows System Update needs administrator privileges to run WinGet upgrades. The app will now close.",
+            "JRAltd Inc Program Updater needs administrator privileges to run WinGet upgrades. The app will now close.",
             "Elevation required",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);

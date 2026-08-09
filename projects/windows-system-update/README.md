@@ -1,4 +1,4 @@
-# Windows System Update Application
+# JRAltd Inc Program Updater
 
 A Windows desktop app that checks for and applies system/package updates via
 [WinGet](https://learn.microsoft.com/windows/package-manager/winget/) (the Windows
