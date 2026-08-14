@@ -78,13 +78,16 @@ public sealed class WinGetService
     /// line winget writes to stdout/stderr as it arrives (e.g. "Downloading", "Installing"),
     /// so callers can show live per-package status. There's no guaranteed line format or
     /// cadence across winget versions/sources — this is best-effort detail, not a parsed
-    /// percentage. <c>Succeeded</c> reflects winget's own exit code only; it does not by
-    /// itself confirm the installed version actually changed — pair with
-    /// <see cref="GetInstalledVersionAsync"/> to verify. <c>BlockedByWinGet</c> is true when
-    /// the failure matches a <see cref="NonRetryablePatterns"/> entry — winget itself
-    /// refusing to proceed, rather than something a retry or a fresh scan might resolve on
-    /// its own — callers can use this to stop offering the package for upgrade instead of
-    /// surfacing it as a normal, retryable failure.
+    /// percentage. <c>Succeeded</c> reflects winget's own exit code — callers trust this
+    /// directly rather than independently re-verifying the installed version afterward (an
+    /// earlier version of this app did that via a `winget list` re-check, but real testing
+    /// found every "can't confirm" case was a genuine success winget just hadn't finished
+    /// registering yet, sometimes over a minute later — see MainWindow.UpdatePackagesAsync
+    /// for the full account). <c>BlockedByWinGet</c> is true when the failure matches a
+    /// <see cref="NonRetryablePatterns"/> entry — winget itself refusing to proceed, rather
+    /// than something a retry or a fresh scan might resolve on its own — callers can use
+    /// this to stop offering the package for upgrade instead of surfacing it as a normal,
+    /// retryable failure.
     /// </summary>
     public async Task<(bool Succeeded, bool BlockedByWinGet)> UpgradePackageAsync(string packageId, IProgress<string>? progress = null, CancellationToken ct = default)
     {
@@ -138,22 +141,6 @@ public sealed class WinGetService
                               "(it may be stuck on a prompt --silent doesn't cover).");
             return (false, false);
         }
-    }
-
-    /// <summary>
-    /// Looks up a specific package's currently-installed version via `winget list`.
-    /// Used to verify an upgrade actually took effect: winget's exit code alone isn't
-    /// fully trustworthy (e.g. it can report success for an upgrade that needs a
-    /// pending reboot to finish applying, leaving the reported installed version
-    /// unchanged in the meantime). Returns null if the package can't be found or its
-    /// version can't be parsed from the output.
-    /// </summary>
-    public async Task<string?> GetInstalledVersionAsync(string packageId, CancellationToken ct = default)
-    {
-        var (_, output) = await RunAsync($"list --id \"{packageId}\" --exact --accept-source-agreements", progress: null, ct);
-        var match = ParsePackageTable(output)
-            .FirstOrDefault(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase));
-        return string.IsNullOrWhiteSpace(match?.CurrentVersion) ? null : match.CurrentVersion;
     }
 
     private static async Task<(int ExitCode, string Output)> RunAsync(string arguments, IProgress<string>? progress, CancellationToken ct)

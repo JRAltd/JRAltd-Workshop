@@ -326,11 +326,11 @@ public partial class MainWindow : Window
     /// <summary>
     /// Updates packages one at a time (rather than a single `winget upgrade --all`
     /// call) so each row's Status/StatusDetail can reflect exactly which package is
-    /// currently running, succeeded, or failed. winget's own exit code isn't fully
-    /// trustworthy on its own (it can report success without the installed version
-    /// actually changing), so a successful exit is followed by a version check via
-    /// GetInstalledVersionAsync; only a package that's verifiably updated is removed
-    /// from the visible list, immediately rather than waiting for the whole batch.
+    /// currently running, succeeded, or failed. A successful exit is trusted as-is
+    /// (see the comment inline below for why this isn't re-verified against
+    /// `winget list` anymore); a failure is checked against
+    /// <see cref="WinGetService"/>'s known non-retryable patterns and moved to
+    /// Blocked if it matches one.
     /// </summary>
     private async Task UpdatePackagesAsync(IReadOnlyList<UpdatePackage> targets)
     {
@@ -372,44 +372,24 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                StatusText.Text = $"Verifying {pkg.Name}...";
-
-                // A package winget could never read a version for in the first place
-                // (shown as "Unknown" in the original scan) can't be proven to have
-                // changed by comparing version strings -- there's nothing to compare
-                // against, so fall back to trusting winget's own reported success
-                // rather than permanently failing something that likely did work.
-                if (string.IsNullOrWhiteSpace(pkg.CurrentVersion) ||
-                    string.Equals(pkg.CurrentVersion, "Unknown", StringComparison.OrdinalIgnoreCase))
-                {
-                    pkg.Status = UpdateStatus.Succeeded;
-                    pkg.StatusDetail = "Updated (installed version could not be tracked before or after, so this is based on winget's reported result)";
-                    _updates.Remove(pkg);
-                    _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
-                    continue;
-                }
-
-                var installedVersion = await GetInstalledVersionWithRetryAsync(pkg.Id, pkg.CurrentVersion);
-                var verified = !string.IsNullOrWhiteSpace(installedVersion) &&
-                                !string.Equals(installedVersion, pkg.CurrentVersion, StringComparison.OrdinalIgnoreCase);
-
-                if (verified)
-                {
-                    pkg.Status = UpdateStatus.Succeeded;
-                    pkg.StatusDetail = $"Updated to {installedVersion}";
-                    _updates.Remove(pkg);
-                    _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
-                }
-                else
-                {
-                    pkg.Status = UpdateStatus.Failed;
-                    pkg.StatusDetail = installedVersion is null
-                        ? "winget reported success, but the installed version couldn't be confirmed even after " +
-                          "retrying for a while. For a large installer (e.g. Visual Studio Build Tools, a .NET " +
-                          "runtime) this can just mean Windows hadn't finished registering the update yet -- try " +
-                          "\"Check for Updates\" again in a minute or two before assuming it actually failed."
-                        : $"winget reported success, but the installed version is still {installedVersion}.";
-                }
+                // A previous version of this method re-checked `winget list` afterward
+                // (with an increasingly long retry window) to independently confirm the
+                // installed version actually changed before trusting "success", on the
+                // theory that winget's exit code alone isn't fully reliable. In
+                // practice, across several real packages (Orca-Flashforge, PDFgear, a
+                // .NET runtime, Visual Studio Build Tools, XnConvert), every single
+                // "winget said success but the version check couldn't confirm it" case
+                // turned out to be a real success that just hadn't finished registering
+                // with Windows yet -- sometimes taking well over a minute, an
+                // unpredictable delay no reasonable per-package retry window reliably
+                // closes. Zero cases of a genuine silent no-op ever turned up. The
+                // repeated false "Failed" reports did more harm than the check caught,
+                // so this now just trusts winget's exit code, the same as it already
+                // did for a package with an untrackable ("Unknown") version.
+                pkg.Status = UpdateStatus.Succeeded;
+                pkg.StatusDetail = $"Updated to {pkg.AvailableVersion}";
+                _updates.Remove(pkg);
+                _allResults.RemoveAll(p => string.Equals(p.Id, pkg.Id, StringComparison.OrdinalIgnoreCase));
             }
 
             var succeededCount = targets.Count(t => t.Status == UpdateStatus.Succeeded);
@@ -420,54 +400,6 @@ public partial class MainWindow : Window
             SetButtonsEnabled(true);
             _isBusy = false;
         }
-    }
-
-    /// <summary>
-    /// Delays between GetInstalledVersionWithRetryAsync's checks. Confirmed by real
-    /// testing: a plain 3-attempt/2-second window (~4-6s total) was long enough for
-    /// most installers but not for heavier ones -- Visual Studio Build Tools and a
-    /// .NET Desktop Runtime upgrade both genuinely succeeded but weren't visible to
-    /// `winget list` for longer than that, presumably because they still had
-    /// significant post-install registration work left when winget's own process
-    /// exited. Growing rather than fixed-interval so a package that verifies quickly
-    /// (the common case) still returns fast, while one that needs longer gets it.
-    /// </summary>
-    private static readonly TimeSpan[] VerificationRetryDelays =
-    {
-        TimeSpan.FromSeconds(2),
-        TimeSpan.FromSeconds(3),
-        TimeSpan.FromSeconds(5),
-        TimeSpan.FromSeconds(8),
-        TimeSpan.FromSeconds(8),
-    };
-
-    /// <summary>
-    /// Some installers finish and exit before Windows' installed-programs registry
-    /// entry is fully updated (e.g. a deferred MSI custom action completing a moment
-    /// after the main process exits), so checking the installed version once,
-    /// immediately, can catch it mid-update and see the stale pre-upgrade version.
-    /// Retries with growing delays (<see cref="VerificationRetryDelays"/>) before
-    /// giving up.
-    /// </summary>
-    private async Task<string?> GetInstalledVersionWithRetryAsync(string packageId, string previousVersion)
-    {
-        string? lastSeen = null;
-        for (var attempt = 0; attempt <= VerificationRetryDelays.Length; attempt++)
-        {
-            if (attempt > 0)
-            {
-                await Task.Delay(VerificationRetryDelays[attempt - 1]);
-            }
-
-            lastSeen = await _winget.GetInstalledVersionAsync(packageId);
-            if (!string.IsNullOrWhiteSpace(lastSeen) &&
-                !string.Equals(lastSeen, previousVersion, StringComparison.OrdinalIgnoreCase))
-            {
-                return lastSeen;
-            }
-        }
-
-        return lastSeen;
     }
 
     private void SetButtonsEnabled(bool enabled)

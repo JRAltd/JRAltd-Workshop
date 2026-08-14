@@ -93,11 +93,10 @@ src/JRAltdIncProgramUpdater/
     └── JRAltdTheme.xaml      # colors/styles lifted from jraltdinc.us
 ```
 
-`WinGetService` runs `winget upgrade`, `winget upgrade --id <id>`, and
-`winget list --id <id>` as child processes and parses the CLI's fixed-width table
-output into `UpdatePackage` records. It doesn't shell through `cmd.exe` or otherwise
-interpolate untrusted input into a shell string — arguments are passed directly via
-`ProcessStartInfo`.
+`WinGetService` runs `winget upgrade` and `winget upgrade --id <id>` as child
+processes and parses the CLI's fixed-width table output into `UpdatePackage`
+records. It doesn't shell through `cmd.exe` or otherwise interpolate untrusted
+input into a shell string — arguments are passed directly via `ProcessStartInfo`.
 
 **"Update All" runs packages one at a time**, not via a single `winget upgrade
 --all` call — that's what lets each row's Status column track exactly which
@@ -107,18 +106,26 @@ the status cell); this is best-effort — winget doesn't guarantee a stable line
 format or a numeric percentage, so treat it as informational text, not a progress
 bar.
 
-**A "successful" upgrade is verified, not just trusted.** winget's own exit code
-isn't fully reliable — in testing, `winget upgrade --id <id> ... --silent` returned
-without hanging but without the package's installed version actually changing.
-So after an upgrade reports success, `UpdatePackagesAsync` calls
-`GetInstalledVersionAsync` (`winget list --id <id> --exact`) and compares the
-result to the package's previous version; only a package that's verifiably
-different is marked Succeeded and removed from the visible list (immediately,
-not just at the next full refresh). If winget reported success but the version
-didn't change, the package is marked Failed instead, with a status detail
-explaining the mismatch. A single upgrade is also capped at a 10-minute timeout
-(and the winget process force-killed if it's hit) in case winget is stuck on a
-prompt `--silent` doesn't cover.
+**A successful exit is trusted, deliberately, after this went back and forth.**
+An earlier version re-verified success via `winget list --id <id> --exact`,
+comparing the installed version against the package's previous version before
+marking it Succeeded — on the theory that winget's exit code alone might not be
+fully reliable. In practice, across several real packages (a plain hash-mismatch
+failure aside, which is caught separately — see below), every single "winget said
+success but the version check couldn't confirm it" case turned out to be a real
+success that just hadn't finished registering with Windows yet, sometimes over a
+minute later for a large installer like Visual Studio Build Tools. No reasonable
+per-package retry window closed that gap reliably, and the repeated false
+"Failed" reports did more harm than the (never actually observed) silent-no-op
+case the check was meant to catch. So `UpdatePackagesAsync` now trusts a
+successful exit directly and removes the package from the visible list
+immediately, the same as it already did for a package with an untrackable
+("Unknown") version.
+
+A single upgrade is capped at a 10-minute timeout (and the winget process
+force-killed if it's hit) in case winget is stuck on a prompt `--silent` doesn't
+cover — that part is unrelated to the verification question above and still
+applies.
 
 ## Skip / ignore packages
 
