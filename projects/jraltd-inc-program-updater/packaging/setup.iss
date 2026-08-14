@@ -3,7 +3,7 @@
 ; app -- see packaging/README.md for the full build-and-package steps.
 
 #define MyAppName "JRAltd Inc Program Updater"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "JRAltd Inc"
 #define MyAppURL "https://jraltdinc.us/"
 #define MyAppExeName "JRAltdIncProgramUpdater.exe"
