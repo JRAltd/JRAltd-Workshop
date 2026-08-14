@@ -404,7 +404,10 @@ public partial class MainWindow : Window
                 {
                     pkg.Status = UpdateStatus.Failed;
                     pkg.StatusDetail = installedVersion is null
-                        ? "winget reported success, but the installed version couldn't be verified afterward."
+                        ? "winget reported success, but the installed version couldn't be confirmed even after " +
+                          "retrying for a while. For a large installer (e.g. Visual Studio Build Tools, a .NET " +
+                          "runtime) this can just mean Windows hadn't finished registering the update yet -- try " +
+                          "\"Check for Updates\" again in a minute or two before assuming it actually failed."
                         : $"winget reported success, but the installed version is still {installedVersion}.";
                 }
             }
@@ -420,20 +423,40 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Delays between GetInstalledVersionWithRetryAsync's checks. Confirmed by real
+    /// testing: a plain 3-attempt/2-second window (~4-6s total) was long enough for
+    /// most installers but not for heavier ones -- Visual Studio Build Tools and a
+    /// .NET Desktop Runtime upgrade both genuinely succeeded but weren't visible to
+    /// `winget list` for longer than that, presumably because they still had
+    /// significant post-install registration work left when winget's own process
+    /// exited. Growing rather than fixed-interval so a package that verifies quickly
+    /// (the common case) still returns fast, while one that needs longer gets it.
+    /// </summary>
+    private static readonly TimeSpan[] VerificationRetryDelays =
+    {
+        TimeSpan.FromSeconds(2),
+        TimeSpan.FromSeconds(3),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(8),
+        TimeSpan.FromSeconds(8),
+    };
+
+    /// <summary>
     /// Some installers finish and exit before Windows' installed-programs registry
     /// entry is fully updated (e.g. a deferred MSI custom action completing a moment
     /// after the main process exits), so checking the installed version once,
     /// immediately, can catch it mid-update and see the stale pre-upgrade version.
-    /// Retries a few times with a short delay before giving up.
+    /// Retries with growing delays (<see cref="VerificationRetryDelays"/>) before
+    /// giving up.
     /// </summary>
     private async Task<string?> GetInstalledVersionWithRetryAsync(string packageId, string previousVersion)
     {
         string? lastSeen = null;
-        for (var attempt = 0; attempt < 3; attempt++)
+        for (var attempt = 0; attempt <= VerificationRetryDelays.Length; attempt++)
         {
             if (attempt > 0)
             {
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(VerificationRetryDelays[attempt - 1]);
             }
 
             lastSeen = await _winget.GetInstalledVersionAsync(packageId);
