@@ -85,7 +85,8 @@ src/JRAltdIncProgramUpdater/
 ├── Converters/
 │   └── UpdateStatusConverters.cs  # UpdateStatus -> display text / status-dot brush
 ├── Services/
-│   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade`/`list` output
+│   ├── WinGetService.cs      # shells out to winget, parses `winget upgrade` output
+│   ├── AppUpdateService.cs   # checks GitHub Releases for a newer build of this app itself
 │   ├── ElevationHelper.cs    # admin check + relaunch-as-admin fallback
 │   ├── AppSettingsService.cs # loads/saves settings.json (ignored ids, blocked packages, auto-check interval)
 │   └── RelayCommand.cs       # minimal ICommand, for the per-card Skip/Unblock buttons' Command binding
@@ -126,6 +127,41 @@ A single upgrade is capped at a 10-minute timeout (and the winget process
 force-killed if it's hit) in case winget is stuck on a prompt `--silent` doesn't
 cover — that part is unrelated to the verification question above and still
 applies.
+
+## Self-update
+
+Separate from WinGet entirely: on startup, `AppUpdateService` checks GitHub
+Releases for a newer build of this app itself. If one's found, it prompts to
+download and run the new installer (which closes this app and relaunches the
+installer elevated, same as running it manually).
+
+This is a plain custom check, not a framework like Velopack or Squirrel —
+deliberately. Those assume the app can silently rewrite its own install directory
+without elevation, which conflicts with this app's `requireAdministrator` manifest
+(WinGet upgrades need admin); Velopack's own docs say apps requiring admin at
+runtime aren't supported. Since this app is always elevated anyway, an extra "yes,
+update now?" prompt isn't a real UX regression, so a from-scratch check is simpler
+and avoids restructuring how or where the app is installed.
+
+A few things worth knowing:
+
+- **Three places must be bumped together for every release**, or the check either
+  won't fire or will loop offering an "update" to the version already running: the
+  `<Version>` in `JRAltdIncProgramUpdater.csproj`, `MyAppVersion` in
+  `packaging/setup.iss`, and the git tag used for the GitHub release
+  (`program-updater-vX.Y.Z`).
+- The check matches releases by that `program-updater-v` tag prefix specifically,
+  not just "the latest release for the whole repo" — this repo hosts more than one
+  project, so trusting `/releases/latest` blindly could pick up some other
+  project's release.
+- Launching the new installer while this app is still running risks Windows
+  refusing to let it overwrite this process's own locked `.exe`. `App.xaml.cs`
+  creates a named Mutex (`JRAltdIncProgramUpdaterAppMutex`) while running, and
+  `setup.iss` sets `AppMutex` to the same string — that's what lets Setup detect
+  and close the running instance before installing. If you ever rename that mutex
+  in one file, rename it in the other too.
+- Network failures, GitHub being unreachable, or rate-limiting are swallowed
+  silently — this check should never block or interrupt the app's actual purpose.
 
 ## Skip / ignore packages
 

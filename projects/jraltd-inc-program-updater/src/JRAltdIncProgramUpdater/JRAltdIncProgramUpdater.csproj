@@ -19,6 +19,17 @@
 
     <!-- Source SVG + regeneration steps: packaging/icon/. -->
     <ApplicationIcon>icon.ico</ApplicationIcon>
+
+    <!--
+      Read at runtime by Services/AppUpdateService.cs (via
+      Assembly.GetExecutingAssembly().GetName().Version) to compare against the
+      latest GitHub release and decide whether to offer a self-update. Three places
+      must be bumped together for every release, or the self-update check either
+      won't fire or will loop offering an "update" to the version you're already on:
+      this <Version>, packaging/setup.iss's MyAppVersion, and the git tag used for
+      the GitHub release (program-updater-vX.Y.Z).
+    -->
+    <Version>1.1.1</Version>
   </PropertyGroup>
 
 </Project>

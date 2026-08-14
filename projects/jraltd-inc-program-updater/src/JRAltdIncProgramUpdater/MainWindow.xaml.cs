@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -11,6 +13,7 @@ namespace JRAltdIncProgramUpdater;
 public partial class MainWindow : Window
 {
     private readonly WinGetService _winget = new();
+    private readonly AppUpdateService _appUpdate = new();
     private readonly ObservableCollection<UpdatePackage> _updates = new();
     private readonly ObservableCollection<BlockedPackage> _blocked = new();
     private readonly AppSettings _settings;
@@ -61,6 +64,59 @@ public partial class MainWindow : Window
         UpdateSectionToggleLabels();
 
         _ = InitializeAsync();
+        _ = CheckForAppUpdateAsync();
+    }
+
+    /// <summary>
+    /// Checks whether a newer build of this app itself is available (distinct from
+    /// _winget, which checks other packages) and, if so, prompts to download and
+    /// run the new installer. Fire-and-forget from the constructor, entirely
+    /// independent of the WinGet scan in InitializeAsync -- this is a background
+    /// nicety that should never delay or interfere with the app's actual purpose.
+    /// </summary>
+    private async Task CheckForAppUpdateAsync()
+    {
+        var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+        var update = await _appUpdate.CheckForUpdateAsync(currentVersion);
+        if (update is null)
+        {
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"A new version of JRAltd Inc Program Updater is available: v{update.Version} (you're on v{currentVersion}).\n\n" +
+            "Download and install it now? This app will close and the installer will run in its place.",
+            "Update available",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var progress = new Progress<int>(percent => StatusText.Text = $"Downloading update... {percent}%");
+            var installerPath = await _appUpdate.DownloadInstallerAsync(update, progress);
+
+            // UseShellExecute (not a direct CreateProcess) is required here for the
+            // same reason the installer's own [Run] section needs the shellexec flag
+            // (see packaging/setup.iss): the installer's manifest declares
+            // requireAdministrator, and a plain CreateProcess call cannot elevate a
+            // child process -- it fails outright with Win32 error 740.
+            Process.Start(new ProcessStartInfo { FileName = installerPath, UseShellExecute = true });
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to download the update: {ex.Message}\n\nYou can download it manually from " +
+                "the GitHub release page instead.",
+                "Update failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private async Task InitializeAsync()

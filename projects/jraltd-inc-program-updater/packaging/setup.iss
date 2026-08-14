@@ -24,6 +24,12 @@ DisableProgramGroupPage=yes
 ; which needs admin for most real-world upgrades); the installer needs admin too
 ; since it writes to Program Files.
 PrivilegesRequired=admin
+; Must match the named Mutex App.xaml.cs creates while running. Lets Setup detect
+; and offer to close a still-running instance before installing -- needed because
+; the app can trigger its own update (MainWindow.CheckForAppUpdateAsync), which
+; launches this installer while the old instance is still alive; without this,
+; Setup could fail to overwrite the running exe's locked file.
+AppMutex=JRAltdIncProgramUpdaterAppMutex
 ; The publish step targets win-x64 (see packaging/README.md), so install as a
 ; genuine 64-bit app under the real Program Files -- without this, Inno Setup
 ; defaults to a 32-bit installer and {autopf} resolves to Program Files (x86).
