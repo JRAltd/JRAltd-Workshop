@@ -29,6 +29,19 @@ public sealed class AppUpdateService
     private const string ReleasesApiUrl = "https://api.github.com/repos/JRAltd/JRAltd-Workshop/releases";
 
     /// <summary>
+    /// The release asset to download — the Inno Setup *installer*, matching
+    /// OutputBaseFilename in packaging/setup.iss. Matched by exact name rather than
+    /// "any .exe asset": a release also plausibly carries the raw published app exe
+    /// (JRAltdIncProgramUpdater.exe), and downloading and running *that* would look
+    /// like an update while doing nothing but launching a second copy of the app.
+    /// A release without this exact asset is skipped entirely rather than falling
+    /// back to some other .exe — no update offered beats the wrong one. If
+    /// setup.iss's OutputBaseFilename ever changes, change this with it (the site's
+    /// download link hardcodes the same name too).
+    /// </summary>
+    private const string InstallerAssetName = "JRAltdIncProgramUpdaterSetup.exe";
+
+    /// <summary>
     /// Returns the newest published (non-draft, non-prerelease) release newer than
     /// <paramref name="currentVersion"/>, or null if already up to date, the check
     /// failed (no network, GitHub unreachable, rate-limited, etc.), or no release
@@ -74,7 +87,8 @@ public sealed class AppUpdateService
                 continue;
             }
 
-            var asset = release.Assets.FirstOrDefault(a => a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+            var asset = release.Assets.FirstOrDefault(a =>
+                string.Equals(a.Name, InstallerAssetName, StringComparison.OrdinalIgnoreCase));
             if (asset is null)
             {
                 continue;
@@ -101,7 +115,19 @@ public sealed class AppUpdateService
         response.EnsureSuccessStatusCode();
 
         var totalBytes = response.Content.Headers.ContentLength;
-        var destinationPath = Path.Combine(Path.GetTempPath(), update.FileName);
+
+        // A fresh directory per download, rather than a fixed %TEMP%\<name> path.
+        // Writing to a fixed path failed in testing with "the process cannot access
+        // the file ... because it is being used by another process": a leftover file
+        // from an earlier attempt can still be held open by something else (an
+        // antivirus scanning a newly-written 150MB executable is the usual culprit),
+        // and FileMode.Create can't reopen a file another process has locked. A path
+        // nothing has seen before can't be locked by anything.
+        var downloadDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"JRAltdIncProgramUpdater-{update.Version}-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(downloadDirectory);
+        var destinationPath = Path.Combine(downloadDirectory, update.FileName);
 
         await using var httpStream = await response.Content.ReadAsStreamAsync(ct);
         await using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);

@@ -150,10 +150,23 @@ A few things worth knowing:
   `<Version>` in `JRAltdIncProgramUpdater.csproj`, `MyAppVersion` in
   `packaging/setup.iss`, and the git tag used for the GitHub release
   (`program-updater-vX.Y.Z`).
+- **Attach the installer, not the app.** The release asset must be
+  `JRAltdIncProgramUpdaterSetup.exe` from `packaging/Output/` — *not*
+  `JRAltdIncProgramUpdater.exe` from `packaging/publish/`, which is the raw
+  application. They're both ~150MB `.exe` files with confusingly similar names, and
+  attaching the wrong one has already happened once: running it would just launch a
+  second copy of the app instead of installing anything. `AppUpdateService` matches
+  that exact asset name and skips a release without it (no update offered beats the
+  wrong one), and the website's download button hardcodes the same name — so
+  getting this wrong silently breaks both.
 - The check matches releases by that `program-updater-v` tag prefix specifically,
   not just "the latest release for the whole repo" — this repo hosts more than one
   project, so trusting `/releases/latest` blindly could pick up some other
   project's release.
+- The installer downloads to a freshly created `%TEMP%` subdirectory rather than a
+  fixed path, because a leftover file from an earlier attempt can still be locked
+  by another process (antivirus scanning a newly written 150MB executable, most
+  likely) and block the write.
 - Launching the new installer while this app is still running risks Windows
   refusing to let it overwrite this process's own locked `.exe`. `App.xaml.cs`
   creates a named Mutex (`JRAltdIncProgramUpdaterAppMutex`) while running, and
