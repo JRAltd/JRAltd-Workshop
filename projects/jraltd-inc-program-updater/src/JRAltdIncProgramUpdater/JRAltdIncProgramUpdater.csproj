@@ -29,7 +29,7 @@
       this <Version>, packaging/setup.iss's MyAppVersion, and the git tag used for
       the GitHub release (program-updater-vX.Y.Z).
     -->
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
   </PropertyGroup>
 
 </Project>
