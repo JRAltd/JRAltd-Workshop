@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>cfm — Markup Calculator</title>
+<meta name="theme-color" content="#003459">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <style>
   :root{
     --navy:#142A4C;
@@ -34,6 +41,7 @@
 
   .page-head{ text-align:center; margin-bottom:26px; }
   .brand-word{ font-weight:900; font-size:26px; letter-spacing:-0.5px; margin:0; }
+  .page-head .brand-logo{ height:34px; width:auto; display:block; margin:0 auto; }
   .page-head .sub{
     font-size:11px; font-weight:700; letter-spacing:1.2px;
     color:var(--text-soft); margin-top:4px; text-transform:uppercase;
@@ -57,6 +65,7 @@
     padding:14px 4px 10px;
   }
   .calc-brand .logo{ font-weight:900; font-size:15px; color:#fff; letter-spacing:-0.3px; }
+  .calc-brand .logo img{ height:16px; width:auto; display:block; }
   .calc-brand .model{ font-size:9px; font-weight:700; color:var(--gold); letter-spacing:1px; }
 
   .screen{
@@ -131,13 +140,13 @@
 <body>
 
   <div class="page-head">
-    <p class="brand-word">cfm</p>
+    <img class="brand-logo" src="icons/cfm-mark.png" alt="cfm">
     <div class="sub">Markup <span class="gold">/</span> Margin Calculator</div>
   </div>
 
   <div class="calc">
     <div class="calc-brand">
-      <div class="logo">cfm</div>
+      <div class="logo"><img src="icons/cfm-mark.png" alt="cfm"></div>
       <div class="model">MU‑100</div>
     </div>
 
@@ -310,6 +319,12 @@ document.addEventListener('keydown', (e)=>{
 });
 
 render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 
 </body>
