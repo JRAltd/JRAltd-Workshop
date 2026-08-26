@@ -1,0 +1,16 @@
+{
+  "name": "cfm Markup / Margin Calculator",
+  "short_name": "cfm Markup",
+  "description": "Calculator for converting between cost, markup %, margin %, and sale price.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#003459",
+  "theme_color": "#003459",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
