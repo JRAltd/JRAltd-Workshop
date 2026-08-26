@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cfm — Markup Calculator</title>
+<style>
+  :root{
+    --navy:#142A4C;
+    --navy-dark:#0E1E38;
+    --navy-darker:#0B1729;
+    --gold:#EFB524;
+    --gold-dark:#C9930F;
+    --red:#B51520;
+    --red-dark:#8F1019;
+    --key-face:#1F3A63;
+    --screen-bg:#0A1220;
+    --ink:#070707;
+    --text-soft:#5b6472;
+    --page-bg:#F4F5F7;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--page-bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:40px 16px 60px;
+  }
+
+  .page-head{ text-align:center; margin-bottom:26px; }
+  .brand-word{ font-weight:900; font-size:26px; letter-spacing:-0.5px; margin:0; }
+  .page-head .sub{
+    font-size:11px; font-weight:700; letter-spacing:1.2px;
+    color:var(--text-soft); margin-top:4px; text-transform:uppercase;
+  }
+  .page-head .sub .gold{ color:var(--gold-dark); }
+
+  .calc{
+    width:100%; max-width:340px;
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-dark) 100%);
+    border-radius:22px;
+    padding:18px 16px 22px;
+    box-shadow:0 20px 40px rgba(14,30,56,0.35), 0 2px 0 rgba(255,255,255,0.05) inset;
+    position:relative;
+  }
+  .calc::before{
+    content:""; position:absolute; top:10px; left:16px; right:16px;
+    height:3px; background:var(--gold); border-radius:2px; opacity:0.9;
+  }
+  .calc-brand{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 4px 10px;
+  }
+  .calc-brand .logo{ font-weight:900; font-size:15px; color:#fff; letter-spacing:-0.3px; }
+  .calc-brand .model{ font-size:9px; font-weight:700; color:var(--gold); letter-spacing:1px; }
+
+  .screen{
+    background:var(--screen-bg);
+    border-radius:12px;
+    padding:14px 16px 12px;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.6);
+    font-family:'SFMono-Regular',Consolas,'Courier New',monospace;
+  }
+  .screen-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:3px 4px; border-radius:6px; transition:background 0.15s ease; cursor:pointer;
+  }
+  .screen-row.active{ background:rgba(239,181,36,0.12); }
+  .screen-row .lbl{ font-size:9.5px; font-weight:700; letter-spacing:1px; color:#7C8AA5; }
+  .screen-row.active .lbl{ color:var(--gold); }
+  .screen-row .val{ font-size:20px; font-weight:600; color:#E7ECF5; letter-spacing:0.5px; }
+  .screen-row .val .cursor{
+    display:inline-block; width:2px; height:16px; background:var(--gold);
+    margin-left:2px; vertical-align:-3px; animation:blink 1s step-end infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .screen-divider{ height:1px; background:rgba(255,255,255,0.08); margin:8px 0 6px; }
+
+  .screen-result .lbl{ color:var(--gold); }
+  .screen-result .val{ font-size:30px; font-weight:700; color:var(--gold); }
+
+  .screen-sub{
+    display:flex; justify-content:space-between; padding:4px 4px 2px;
+    font-size:10.5px; color:#8B96AC; letter-spacing:0.3px;
+  }
+  .screen-sub b{ color:#C7D0E0; font-weight:600; }
+
+  .mode-seg{
+    display:flex; margin:14px 4px 4px;
+    background:rgba(0,0,0,0.25); border-radius:8px; padding:3px;
+  }
+  .mode-seg button{
+    flex:1; border:none; background:transparent; color:#B9C3D6;
+    font-size:11px; font-weight:700; letter-spacing:0.3px;
+    padding:8px 6px; border-radius:6px; cursor:pointer;
+  }
+  .mode-seg button.active{ background:var(--gold); color:var(--navy-darker); }
+
+  .keypad{
+    display:grid; grid-template-columns:repeat(4, 1fr);
+    grid-auto-rows:52px; gap:9px; margin-top:14px; padding:0 4px;
+  }
+  .key{
+    border:none; border-radius:12px; font-size:16px; font-weight:700;
+    cursor:pointer; color:#fff; background:var(--key-face);
+    box-shadow:0 3px 0 rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.08) inset;
+    transition:transform 0.05s ease, box-shadow 0.05s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .key:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,0.25); }
+  .key.fn{ background:#24304a; font-size:12px; letter-spacing:0.3px; }
+  .key.clear{ background:var(--red); }
+  .key.clear:active{ background:var(--red-dark); }
+  .key.equals{ background:var(--gold); color:var(--navy-darker); grid-row: span 2; }
+  .key.equals:active{ background:var(--gold-dark); }
+  .key.zero{ grid-column: span 2; }
+
+  .footnote{
+    max-width:340px; margin-top:20px; font-size:11.5px; color:var(--text-soft);
+    text-align:center; line-height:1.5; padding:0 6px;
+  }
+  .footnote b{ color:#3a4250; }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <p class="brand-word">cfm</p>
+    <div class="sub">Markup <span class="gold">/</span> Margin Calculator</div>
+  </div>
+
+  <div class="calc">
+    <div class="calc-brand">
+      <div class="logo">cfm</div>
+      <div class="model">MU‑100</div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-row active" id="row-cost" onclick="setActive('cost')">
+        <span class="lbl">COST $</span>
+        <span class="val" id="disp-cost">0<span class="cursor"></span></span>
+      </div>
+      <div class="screen-row" id="row-pct" onclick="setActive('pct')">
+        <span class="lbl" id="lbl-pct">MARKUP %</span>
+        <span class="val" id="disp-pct">0</span>
+      </div>
+
+      <div class="screen-divider"></div>
+
+      <div class="screen-row screen-result">
+        <span class="lbl">PRICE</span>
+        <span class="val" id="disp-price">$0.00</span>
+      </div>
+      <div class="screen-sub">
+        <span>PROFIT <b id="disp-profit">$0.00</b></span>
+        <span id="disp-equiv">MARGIN 0.0%</span>
+      </div>
+    </div>
+
+    <div class="mode-seg">
+      <button id="btn-mode-markup" class="active" onclick="setMode('markup')">BY MARKUP %</button>
+      <button id="btn-mode-margin" onclick="setMode('margin')">BY MARGIN %</button>
+    </div>
+
+    <div class="keypad">
+      <button class="key clear" onclick="pressAC()">AC</button>
+      <button class="key fn" onclick="pressBackspace()">⌫</button>
+      <button class="key fn" onclick="setActive('cost')">COST</button>
+      <button class="key fn" onclick="setActive('pct')">%</button>
+
+      <button class="key" onclick="pressDigit('7')">7</button>
+      <button class="key" onclick="pressDigit('8')">8</button>
+      <button class="key" onclick="pressDigit('9')">9</button>
+      <button class="key equals" onclick="pressEquals()">=</button>
+
+      <button class="key" onclick="pressDigit('4')">4</button>
+      <button class="key" onclick="pressDigit('5')">5</button>
+      <button class="key" onclick="pressDigit('6')">6</button>
+
+      <button class="key" onclick="pressDigit('1')">1</button>
+      <button class="key" onclick="pressDigit('2')">2</button>
+      <button class="key" onclick="pressDigit('3')">3</button>
+
+      <button class="key zero" onclick="pressDigit('0')">0</button>
+      <button class="key" onclick="pressDigit('.')">.</button>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>Markup</b> is profit on cost — Price = Cost × (1 + Markup ÷ 100).
+    <b>Margin</b> is profit on price — Price = Cost ÷ (1 − Margin ÷ 100).
+    Tap COST or % to select a field, then type. Toggle above switches which one you're entering.
+  </div>
+
+<script>
+let mode = 'markup';
+let active = 'cost';
+let costStr = '0';
+let pctStr = '0';
+
+function fmtMoney(n){
+  if(!isFinite(n)) n = 0;
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtPct(n){
+  if(!isFinite(n)) n = 0;
+  return n.toFixed(1) + '%';
+}
+
+function setActive(field){
+  active = field;
+  document.getElementById('row-cost').classList.toggle('active', active==='cost');
+  document.getElementById('row-pct').classList.toggle('active', active==='pct');
+  render();
+}
+
+function setMode(newMode){
+  mode = newMode;
+  document.getElementById('btn-mode-markup').classList.toggle('active', mode==='markup');
+  document.getElementById('btn-mode-margin').classList.toggle('active', mode==='margin');
+  document.getElementById('lbl-pct').textContent = mode==='markup' ? 'MARKUP %' : 'MARGIN %';
+  render();
+}
+
+function currentBuffer(){ return active==='cost' ? costStr : pctStr; }
+function setCurrentBuffer(v){ if(active==='cost'){ costStr = v; } else { pctStr = v; } }
+
+function pressDigit(d){
+  let buf = currentBuffer();
+  if(d === '.'){
+    if(!buf.includes('.')) buf += '.';
+  } else {
+    if(buf === '0'){ buf = d; }
+    else if(buf.length < 10){ buf += d; }
+  }
+  setCurrentBuffer(buf);
+  render();
+}
+
+function pressBackspace(){
+  let buf = currentBuffer();
+  buf = buf.length > 1 ? buf.slice(0, -1) : '0';
+  setCurrentBuffer(buf);
+  render();
+}
+
+function pressAC(){
+  costStr = '0';
+  pctStr = '0';
+  active = 'cost';
+  mode = 'markup';
+  document.getElementById('btn-mode-markup').classList.add('active');
+  document.getElementById('btn-mode-margin').classList.remove('active');
+  document.getElementById('lbl-pct').textContent = 'MARKUP %';
+  document.getElementById('row-cost').classList.add('active');
+  document.getElementById('row-pct').classList.remove('active');
+  render();
+}
+
+function pressEquals(){
+  const priceEl = document.getElementById('disp-price');
+  priceEl.style.transition = 'none';
+  priceEl.style.opacity = '0.25';
+  requestAnimationFrame(()=>{
+    priceEl.style.transition = 'opacity 0.25s ease';
+    priceEl.style.opacity = '1';
+  });
+  setActive(active === 'cost' ? 'pct' : 'cost');
+}
+
+function render(){
+  document.getElementById('disp-cost').innerHTML = costStr + (active==='cost' ? '<span class="cursor"></span>' : '');
+  document.getElementById('disp-pct').innerHTML = pctStr + (active==='pct' ? '<span class="cursor"></span>' : '');
+
+  const cost = parseFloat(costStr) || 0;
+  const pct = parseFloat(pctStr) || 0;
+  let price, profit, markupPct, marginPct;
+
+  if(mode === 'markup'){
+    markupPct = pct;
+    price = cost * (1 + markupPct/100);
+    profit = price - cost;
+    marginPct = price !== 0 ? (profit/price)*100 : 0;
+  } else {
+    marginPct = pct;
+    price = marginPct < 100 ? cost / (1 - marginPct/100) : 0;
+    profit = price - cost;
+    markupPct = cost !== 0 ? (profit/cost)*100 : 0;
+  }
+
+  document.getElementById('disp-price').textContent = fmtMoney(price);
+  document.getElementById('disp-profit').textContent = fmtMoney(profit);
+  document.getElementById('disp-equiv').textContent =
+    mode === 'markup' ? `MARGIN ${fmtPct(marginPct)}` : `MARKUP ${fmtPct(markupPct)}`;
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key >= '0' && e.key <= '9'){ pressDigit(e.key); }
+  else if(e.key === '.'){ pressDigit('.'); }
+  else if(e.key === 'Backspace'){ pressBackspace(); e.preventDefault(); }
+  else if(e.key === 'Enter' || e.key === '='){ pressEquals(); }
+  else if(e.key === 'Tab'){ setActive(active==='cost' ? 'pct' : 'cost'); e.preventDefault(); }
+  else if(e.key === 'Escape'){ pressAC(); }
+});
+
+render();
+</script>
+
+</body>
+</html>
