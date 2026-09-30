@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>cfm — Markup Calculator</title>
+<title>cfm — Margin Calculator</title>
 <meta name="theme-color" content="#003459">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
@@ -100,17 +100,6 @@
   }
   .screen-sub b{ color:#C7D0E0; font-weight:600; }
 
-  .mode-seg{
-    display:flex; margin:14px 4px 4px;
-    background:rgba(0,0,0,0.25); border-radius:8px; padding:3px;
-  }
-  .mode-seg button{
-    flex:1; border:none; background:transparent; color:#B9C3D6;
-    font-size:11px; font-weight:700; letter-spacing:0.3px;
-    padding:8px 6px; border-radius:6px; cursor:pointer;
-  }
-  .mode-seg button.active{ background:var(--gold); color:var(--navy-darker); }
-
   .keypad{
     display:grid; grid-template-columns:repeat(4, 1fr);
     grid-auto-rows:52px; gap:9px; margin-top:14px; padding:0 4px;
@@ -141,7 +130,7 @@
 
   <div class="page-head">
     <img class="brand-logo" src="icons/cfm-mark.png" alt="cfm">
-    <div class="sub">Markup <span class="gold">/</span> Margin Calculator</div>
+    <div class="sub">Margin Calculator</div>
   </div>
 
   <div class="calc">
@@ -156,7 +145,7 @@
         <span class="val" id="disp-cost">0<span class="cursor"></span></span>
       </div>
       <div class="screen-row" id="row-pct" onclick="setActive('pct')">
-        <span class="lbl" id="lbl-pct">MARKUP %</span>
+        <span class="lbl" id="lbl-pct">MARGIN %</span>
         <span class="val" id="disp-pct">0</span>
       </div>
 
@@ -168,13 +157,8 @@
       </div>
       <div class="screen-sub">
         <span>PROFIT <b id="disp-profit">$0.00</b></span>
-        <span id="disp-equiv">MARGIN 0.0%</span>
+        <span id="disp-equiv">MARKUP 0.0%</span>
       </div>
-    </div>
-
-    <div class="mode-seg">
-      <button id="btn-mode-markup" class="active" onclick="setMode('markup')">BY MARKUP %</button>
-      <button id="btn-mode-margin" onclick="setMode('margin')">BY MARGIN %</button>
     </div>
 
     <div class="keypad">
@@ -202,13 +186,11 @@
   </div>
 
   <div class="footnote">
-    <b>Markup</b> is profit on cost — Price = Cost × (1 + Markup ÷ 100).
     <b>Margin</b> is profit on price — Price = Cost ÷ (1 − Margin ÷ 100).
-    Tap COST or % to select a field, then type. Toggle above switches which one you're entering.
+    Tap COST or % to select a field, then type.
   </div>
 
 <script>
-let mode = 'markup';
 let active = 'cost';
 let costStr = '0';
 let pctStr = '0';
@@ -226,14 +208,6 @@ function setActive(field){
   active = field;
   document.getElementById('row-cost').classList.toggle('active', active==='cost');
   document.getElementById('row-pct').classList.toggle('active', active==='pct');
-  render();
-}
-
-function setMode(newMode){
-  mode = newMode;
-  document.getElementById('btn-mode-markup').classList.toggle('active', mode==='markup');
-  document.getElementById('btn-mode-margin').classList.toggle('active', mode==='margin');
-  document.getElementById('lbl-pct').textContent = mode==='markup' ? 'MARKUP %' : 'MARGIN %';
   render();
 }
 
@@ -263,10 +237,6 @@ function pressAC(){
   costStr = '0';
   pctStr = '0';
   active = 'cost';
-  mode = 'markup';
-  document.getElementById('btn-mode-markup').classList.add('active');
-  document.getElementById('btn-mode-margin').classList.remove('active');
-  document.getElementById('lbl-pct').textContent = 'MARKUP %';
   document.getElementById('row-cost').classList.add('active');
   document.getElementById('row-pct').classList.remove('active');
   render();
@@ -288,25 +258,17 @@ function render(){
   document.getElementById('disp-pct').innerHTML = pctStr + (active==='pct' ? '<span class="cursor"></span>' : '');
 
   const cost = parseFloat(costStr) || 0;
-  const pct = parseFloat(pctStr) || 0;
-  let price, profit, markupPct, marginPct;
+  const marginPct = parseFloat(pctStr) || 0;
+  let price, profit, markupPct;
 
-  if(mode === 'markup'){
-    markupPct = pct;
-    price = cost * (1 + markupPct/100);
-    profit = price - cost;
-    marginPct = price !== 0 ? (profit/price)*100 : 0;
-  } else {
-    marginPct = pct;
-    price = marginPct < 100 ? cost / (1 - marginPct/100) : 0;
-    profit = price - cost;
-    markupPct = cost !== 0 ? (profit/cost)*100 : 0;
-  }
+  // Margin mode only
+  price = marginPct < 100 ? cost / (1 - marginPct/100) : 0;
+  profit = price - cost;
+  markupPct = cost !== 0 ? (profit/cost)*100 : 0;
 
   document.getElementById('disp-price').textContent = fmtMoney(price);
   document.getElementById('disp-profit').textContent = fmtMoney(profit);
-  document.getElementById('disp-equiv').textContent =
-    mode === 'markup' ? `MARGIN ${fmtPct(marginPct)}` : `MARKUP ${fmtPct(markupPct)}`;
+  document.getElementById('disp-equiv').textContent = `MARKUP ${fmtPct(markupPct)}`;
 }
 
 document.addEventListener('keydown', (e)=>{
