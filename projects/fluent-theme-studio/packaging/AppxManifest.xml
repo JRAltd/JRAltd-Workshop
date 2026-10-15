@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10" xmlns:desktop7="http://schemas.microsoft.com/appx/manifest/desktop/windows10/7" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap uap10 desktop7 rescap" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest">
+  <Identity Name="JRAltdInc.Windows11ThemeGenerator" Publisher="CN=B5A5A495-8A06-4513-9CCE-C33BE9123C3F" Version="1.0.2.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>Fluent Theme Studio for Windows 11</DisplayName>
+    <PublisherDisplayName>JRAltd_Inc</PublisherDisplayName>
+    <Description>Design, preview, synthesize and generate Windows 11 themes with custom cursors, sounds, and icons.</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+  <Applications>
+    <Application Id="WINDOWSOneOneTHEMEGENERATOR" Executable="VFS\UserProgramFiles\Windows 11 Theme Generator\Windows 11 Theme Generator.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements BackgroundColor="transparent" DisplayName="Fluent Theme Studio for Windows 11" Square150x150Logo="Assets\WINDOWSOneOneTHEMEGENERATOR-Square150x150Logo.png" Square44x44Logo="Assets\WINDOWSOneOneTHEMEGENERATOR-Square44x44Logo.png" Description="Fluent Theme Studio for Windows 11">
+        <uap:DefaultTile Wide310x150Logo="Assets\WINDOWSOneOneTHEMEGENERATOR-Wide310x150Logo.png" Square310x310Logo="Assets\WINDOWSOneOneTHEMEGENERATOR-Square310x310Logo.png" Square71x71Logo="Assets\WINDOWSOneOneTHEMEGENERATOR-Square71x71Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <desktop7:Extension Category="windows.shortcut">
+          <desktop7:Shortcut File="[{Programs}]\Fluent Theme Studio for Windows 11.lnk" Icon="[{Package}]\VFS\UserProgramFiles\Windows 11 Theme Generator\Windows 11 Theme Generator.exe" />
+        </desktop7:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <mp:PhoneIdentity PhoneProductId="59bfbdaa-3f5d-4f44-9f45-ae8e493bbd72" PhonePublisherId="a477eb22-1ca9-4631-8e9c-0245849c3889" />
+</Package>

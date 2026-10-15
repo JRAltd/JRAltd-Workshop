@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluent Theme Studio for Windows 11</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        winAccent: 'var(--win-accent, #0078d4)',
+                        winBgDark: '#202020',
+                        winCardDark: 'rgba(32, 32, 32, 0.75)',
+                        winSurfaceDark: '#2c2c2c'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- JSZip for browser side .deskthemepack generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-['Segoe_UI',sans-serif] min-h-screen flex flex-col overflow-x-hidden selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="h-16 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i data-lucide="palette" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-semibold text-lg tracking-tight flex items-center gap-2">
+                    Fluent Theme Studio
+                </h1>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">for Windows 11</span>
+                <p class="text-xs text-slate-400">Design, customize & export native Windows 11 themes</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- AI Auto Generate Theme Button -->
+            <button id="aiAutoGenerateBtn" class="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-purple-600/30 transition-all cursor-pointer">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                AI Synthesize Theme
+            </button>
+
+            <!-- Theme Presets Dropdown -->
+            <div class="relative">
+                <select id="presetSelect" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all cursor-pointer font-medium pr-8">
+                    <option value="" disabled selected>✨ Load Theme Preset...</option>
+                    <option value="win11_dark">Windows 11 Dark (Default)</option>
+                    <option value="win11_light">Windows 11 Light (Default)</option>
+                    <option value="cyberpunk">Cyberpunk Neon</option>
+                    <option value="nord">Nordic Frost</option>
+                    <option value="oled">Midnight OLED Black</option>
+                    <option value="retro95">Retro Windows 95</option>
+                    <option value="pastel">Pastel Glow</option>
+                </select>
+            </div>
+
+            <!-- Export Buttons -->
+            <button id="exportThemeBtn" class="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition-all">
+                <i data-lucide="file-code" class="w-4 h-4 text-blue-400"></i>
+                Export .theme
+            </button>
+
+            <button id="exportPackBtn" class="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-600/30 transition-all">
+                <i data-lucide="archive" class="w-4 h-4"></i>
+                Export .deskthemepack
+            </button>
+
+            <button id="applyWindowsBtn" class="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-emerald-600/20 transition-all">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                Apply to Windows 11
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-12 gap-0 overflow-hidden min-h-[calc(100vh-4rem)]">
+        
+        <!-- Left Sidebar: Customization Controls -->
+        <aside class="col-span-12 lg:col-span-4 xl:col-span-3 border-r border-slate-800 bg-slate-900/60 flex flex-col h-full overflow-y-auto custom-scrollbar">
+            
+            <!-- Controls Nav Tabs -->
+            <div class="flex border-b border-slate-800 bg-slate-900/80 sticky top-0 z-20 text-xs font-medium text-slate-400 overflow-x-auto">
+                <button class="tab-btn active px-3 py-3 border-b-2 border-blue-500 text-blue-400 flex items-center gap-1.5 whitespace-nowrap" data-tab="appearance">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Appearance
+                </button>
+                <button class="tab-btn px-3 py-3 border-b-2 border-transparent hover:text-slate-200 flex items-center gap-1.5 whitespace-nowrap" data-tab="wallpaper">
+                    <i data-lucide="image" class="w-3.5 h-3.5"></i> Wallpaper
+                </button>
+                <button class="tab-btn px-3 py-3 border-b-2 border-transparent hover:text-slate-200 flex items-center gap-1.5 whitespace-nowrap" data-tab="cursors">
+                    <i data-lucide="mouse-pointer" class="w-3.5 h-3.5"></i> Cursors
+                </button>
+                <button class="tab-btn px-3 py-3 border-b-2 border-transparent hover:text-slate-200 flex items-center gap-1.5 whitespace-nowrap" data-tab="sounds">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Sounds
+                </button>
+                <button class="tab-btn px-3 py-3 border-b-2 border-transparent hover:text-slate-200 flex items-center gap-1.5 whitespace-nowrap" data-tab="icons">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Icons
+                </button>
+                <button class="tab-btn px-3 py-3 border-b-2 border-transparent hover:text-slate-200 flex items-center gap-1.5 whitespace-nowrap" data-tab="syscolors">
+                    <i data-lucide="palette" class="w-3.5 h-3.5"></i> Colors
+                </button>
+            </div>
+
+            <!-- Tab Content Containers -->
+            <div class="p-5 space-y-6 flex-1">
+                
+                <!-- TAB 1: APPEARANCE -->
+                <div id="tab-appearance" class="tab-content space-y-5">
+                    
+                    <!-- Theme Info Metadata -->
+                    <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-3">
+                        <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider">Theme Information</h3>
+                        <div>
+                            <label class="text-xs text-slate-300 mb-1 block">Theme Display Name</label>
+                            <input type="text" id="themeNameInput" value="My Custom Win11 Theme" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- System & App Mode Toggle -->
+                    <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-4">
+                        <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider">Windows 11 Mode</h3>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="modeDarkBtn" class="flex flex-col items-center justify-center p-3 rounded-xl border border-blue-500 bg-blue-500/10 text-blue-400 transition-all cursor-pointer">
+                                <i data-lucide="moon" class="w-5 h-5 mb-1.5"></i>
+                                <span class="text-xs font-semibold">Dark Mode</span>
+                            </button>
+                            <button id="modeLightBtn" class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-600 transition-all cursor-pointer">
+                                <i data-lucide="sun" class="w-5 h-5 mb-1.5"></i>
+                                <span class="text-xs font-semibold">Light Mode</span>
+                            </button>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-700/40 space-y-3">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-xs text-slate-300">Title Bar Accent Color</span>
+                                <input type="checkbox" id="titlebarAccentToggle" checked class="w-4 h-4 rounded text-blue-600 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer">
+                            </label>
+
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-xs text-slate-300">Auto Pick Accent from Wallpaper</span>
+                                <input type="checkbox" id="autoColorizationToggle" checked class="w-4 h-4 rounded text-blue-600 focus:ring-0 bg-slate-900 border-slate-700 cursor-pointer">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Accent Color Selection -->
+                    <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider">Accent Color</h3>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="accentColorPicker" value="#0078d4" class="w-6 h-6 rounded-md cursor-pointer border-0 bg-transparent">
+                                <span id="accentHexLabel" class="text-xs font-mono text-slate-300">#0078D4</span>
+                            </div>
+                        </div>
+
+                        <!-- Windows 11 Preset Swatches -->
+                        <div>
+                            <span class="text-[11px] text-slate-400 mb-2 block">Windows Preset Colors</span>
+                            <div id="swatchGrid" class="grid grid-cols-6 gap-2">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Extracted Colors Swatches -->
+                        <div id="extractedSwatchesContainer" class="hidden">
+                            <span class="text-[11px] text-slate-400 mb-2 block flex items-center justify-between">
+                                Wallpaper Extracted Colors
+                                <i data-lucide="sparkles" class="w-3 h-3 text-amber-400"></i>
+                            </span>
+                            <div id="extractedSwatchGrid" class="grid grid-cols-6 gap-2">
+                                <!-- Populated by ColorThief algorithm -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: WALLPAPER DRAG & DROP -->
+                <div id="tab-wallpaper" class="tab-content hidden space-y-5">
+                    
+                    <!-- Drag & Drop Zone -->
+                    <div id="wallpaperDropZone" class="border-2 border-dashed border-slate-700 hover:border-blue-500/80 bg-slate-800/40 hover:bg-blue-500/5 rounded-xl p-6 text-center transition-all cursor-pointer group">
+                        <input type="file" id="wallpaperFileInput" accept="image/*" class="hidden">
+                        <div class="w-12 h-12 rounded-full bg-slate-800 text-blue-400 mx-auto flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-xs font-semibold text-slate-200">Drag & drop desktop wallpaper</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Supports PNG, JPG, WEBP, BMP (or click to browse)</p>
+                    </div>
+
+                    <!-- Wallpaper Fit Options -->
+                    <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-3">
+                        <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider">Wallpaper Position & Style</h3>
+                        <select id="wallpaperStyleSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500">
+                            <option value="10" selected>Fill (Default)</option>
+                            <option value="6">Fit</option>
+                            <option value="2">Stretch</option>
+                            <option value="0">Tile</option>
+                            <option value="4">Center</option>
+                            <option value="22">Span</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- TAB 3: CURSORS -->
+                <div id="tab-cursors" class="tab-content hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Customize cursor pointers</span>
+                        <button id="aiGenerateCursorsBtn" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1 font-semibold">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i> AI Generate Matching Cursors
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3" id="cursorDropZones">
+                        <!-- Standard Arrow Pointer -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-cursor="Arrow">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="mouse-pointer" class="w-5 h-5 text-blue-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">Normal Select</span>
+                                    <span class="text-[10px] text-slate-400 cursor-filename">Default System Pointer</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Browse
+                                <input type="file" class="cursor-file-input hidden" accept=".cur,.ani,.png,.ico">
+                            </label>
+                        </div>
+
+                        <!-- Link Select Pointer -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-cursor="Hand">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="pointer" class="w-5 h-5 text-emerald-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">Link Select</span>
+                                    <span class="text-[10px] text-slate-400 cursor-filename">Default Hand</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Browse
+                                <input type="file" class="cursor-file-input hidden" accept=".cur,.ani,.png,.ico">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: SOUNDS -->
+                <div id="tab-sounds" class="tab-content hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Upload or AI Synthesize <code class="text-blue-400 font-mono">.wav</code> sound schemes</span>
+                        <button id="aiSynthesizeSoundsBtn" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1 font-semibold">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i> AI Synthesize Audio
+                        </button>
+                    </div>
+
+                    <div class="space-y-3" id="soundDropZones">
+                        <!-- Windows Notification Sound -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2" data-sound="Notification">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <i data-lucide="bell" class="w-4 h-4 text-blue-400"></i>
+                                    <span class="text-xs font-semibold text-slate-200">System Notification</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button class="play-sound-btn px-2 py-1 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded text-[11px] font-semibold flex items-center gap-1">
+                                        <i data-lucide="play" class="w-3 h-3"></i> Play
+                                    </button>
+                                    <label class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                        Upload .wav
+                                        <input type="file" class="sound-file-input hidden" accept=".wav">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex items-center justify-between sound-status">
+                                <span>Default / AI Chime</span>
+                            </div>
+                        </div>
+
+                        <!-- Critical Stop Sound -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2" data-sound="CriticalStop">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400"></i>
+                                    <span class="text-xs font-semibold text-slate-200">Critical Stop / Error</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button class="play-sound-btn px-2 py-1 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded text-[11px] font-semibold flex items-center gap-1">
+                                        <i data-lucide="play" class="w-3 h-3"></i> Play
+                                    </button>
+                                    <label class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                        Upload .wav
+                                        <input type="file" class="sound-file-input hidden" accept=".wav">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex items-center justify-between sound-status">
+                                <span>Default / AI Resonance</span>
+                            </div>
+                        </div>
+
+                        <!-- Recycle Bin Empty Sound -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2" data-sound="EmptyRecycleBin">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <i data-lucide="trash-2" class="w-4 h-4 text-emerald-400"></i>
+                                    <span class="text-xs font-semibold text-slate-200">Empty Recycle Bin</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button class="play-sound-btn px-2 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded text-[11px] font-semibold flex items-center gap-1">
+                                        <i data-lucide="play" class="w-3 h-3"></i> Play
+                                    </button>
+                                    <label class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                        Upload .wav
+                                        <input type="file" class="sound-file-input hidden" accept=".wav">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex items-center justify-between sound-status">
+                                <span>Default / AI Sweep</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: DESKTOP ICONS -->
+                <div id="tab-icons" class="tab-content hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Customize Desktop Icons</span>
+                        <button id="aiGenerateIconsBtn" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1 font-semibold">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-amber-300"></i> AI Generate Matching Icons
+                        </button>
+                    </div>
+
+                    <div class="space-y-3" id="iconDropZones">
+                        <!-- Computer / This PC Icon -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-icon="Computer">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="monitor" class="w-5 h-5 text-blue-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">This PC</span>
+                                    <span class="text-[10px] text-slate-400 icon-filename">System Default / AI Glass</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Upload
+                                <input type="file" class="icon-file-input hidden" accept=".ico,.png,.jpg,.svg">
+                            </label>
+                        </div>
+
+                        <!-- User Files Folder Icon -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-icon="UserFiles">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="folder" class="w-5 h-5 text-amber-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">User Files</span>
+                                    <span class="text-[10px] text-slate-400 icon-filename">System Default / AI Folder</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Upload
+                                <input type="file" class="icon-file-input hidden" accept=".ico,.png,.jpg,.svg">
+                            </label>
+                        </div>
+
+                        <!-- Network Icon -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-icon="Network">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="globe" class="w-5 h-5 text-indigo-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">Network</span>
+                                    <span class="text-[10px] text-slate-400 icon-filename">System Default / AI Globe</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Upload
+                                <input type="file" class="icon-file-input hidden" accept=".ico,.png,.jpg,.svg">
+                            </label>
+                        </div>
+
+                        <!-- Recycle Bin Icon -->
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between" data-icon="RecycleBin">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="trash-2" class="w-5 h-5 text-emerald-400"></i>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-200 block">Recycle Bin</span>
+                                    <span class="text-[10px] text-slate-400 icon-filename">System Default / AI Bin</span>
+                                </div>
+                            </div>
+                            <label class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-[11px] rounded-md font-medium cursor-pointer">
+                                Upload
+                                <input type="file" class="icon-file-input hidden" accept=".ico,.png,.jpg,.svg">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: SYSTEM COLORS FINE TUNING -->
+                <div id="tab-syscolors" class="tab-content hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Fine-tune classic Windows system colors</span>
+                        <button id="resetSysColorsBtn" class="text-[11px] text-blue-400 hover:underline">Reset to Mode Default</button>
+                    </div>
+
+                    <div class="space-y-2" id="sysColorsList">
+                        <!-- Populated dynamically by JS for 20+ Windows RGB color entries -->
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Center Workbench: Real-Time Windows 11 Live Preview -->
+        <section class="col-span-12 lg:col-span-8 xl:col-span-9 bg-slate-950 p-6 flex flex-col justify-center items-center relative overflow-hidden group">
+            
+            <!-- Live Preview Badge & Quick Toggles -->
+            <div class="absolute top-4 left-6 right-6 flex items-center justify-between z-30 pointer-events-none">
+                <span class="px-3 py-1 bg-slate-900/80 backdrop-blur-md rounded-full text-[11px] font-semibold text-slate-300 border border-slate-800 flex items-center gap-2 shadow-lg">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Live Windows 11 Desktop Preview
+                </span>
+                <span class="text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800">
+                    Aspect 16:9 • Drag window to position
+                </span>
+            </div>
+
+            <!-- WINDOWS 11 CANVAS MONITOR CONTAINER -->
+            <div id="winDesktopCanvas" class="w-full max-w-4xl aspect-[16/9] rounded-2xl border border-slate-700/80 shadow-2xl overflow-hidden relative flex flex-col justify-between transition-all duration-300 select-none">
+                
+                <!-- Desktop Wallpaper Layer -->
+                <div id="canvasWallpaper" class="absolute inset-0 bg-cover bg-center transition-all duration-500"></div>
+                <div id="canvasWallpaperOverlay" class="absolute inset-0 bg-slate-950/0 transition-all"></div>
+
+                <!-- Desktop Icons Layer (Top Left) -->
+                <div class="relative z-10 p-4 grid grid-rows-4 gap-4 w-28">
+                    <!-- Icon: Computer -->
+                    <div class="flex flex-col items-center p-1.5 rounded-lg hover:bg-white/10 backdrop-blur-sm cursor-pointer transition-all text-center group/icon">
+                        <div id="iconThisPC" class="w-8 h-8 rounded bg-blue-500/20 border border-blue-400/30 flex items-center justify-center mb-1 text-blue-300 shadow-sm transition-colors overflow-hidden">
+                            <i data-lucide="monitor" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[10px] text-white font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">This PC</span>
+                    </div>
+
+                    <!-- Icon: User Folder -->
+                    <div class="flex flex-col items-center p-1.5 rounded-lg hover:bg-white/10 backdrop-blur-sm cursor-pointer transition-all text-center group/icon">
+                        <div id="iconUserFiles" class="w-8 h-8 rounded bg-amber-500/20 border border-amber-400/30 flex items-center justify-center mb-1 text-amber-300 shadow-sm transition-colors overflow-hidden">
+                            <i data-lucide="folder" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[10px] text-white font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">User Files</span>
+                    </div>
+
+                    <!-- Icon: Recycle Bin -->
+                    <div class="flex flex-col items-center p-1.5 rounded-lg hover:bg-white/10 backdrop-blur-sm cursor-pointer transition-all text-center group/icon">
+                        <div id="iconRecycleBin" class="w-8 h-8 rounded bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-1 text-emerald-300 shadow-sm transition-colors overflow-hidden">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[10px] text-white font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Recycle Bin</span>
+                    </div>
+                </div>
+
+                <!-- DRAGGABLE SAMPLE WINDOW 11 FRAME -->
+                <div id="sampleWindowFrame" class="absolute top-10 left-36 w-[420px] rounded-xl shadow-2xl border transition-all duration-200 z-20 overflow-hidden flex flex-col backdrop-blur-xl">
+                    <!-- Title Bar -->
+                    <div id="winTitleBar" class="h-9 px-3 flex items-center justify-between cursor-move select-none transition-colors border-b border-white/10">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-3.5 h-3.5 opacity-80"></i>
+                            <span id="winTitleText" class="text-xs font-semibold tracking-wide">Personalization Settings</span>
+                        </div>
+                        <!-- Window Action Controls -->
+                        <div class="flex items-center">
+                            <button class="w-8 h-9 hover:bg-white/10 flex items-center justify-center transition-colors">
+                                <span class="w-2.5 h-[1px] bg-current"></span>
+                            </button>
+                            <button class="w-8 h-9 hover:bg-white/10 flex items-center justify-center transition-colors">
+                                <span class="w-2.5 h-2.5 border border-current"></span>
+                            </button>
+                            <button class="w-8 h-9 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Window Client Area -->
+                    <div id="winClientBody" class="p-4 space-y-4 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-sm">Windows 11 Theme Preview</span>
+                            <span id="winModeBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400">Dark</span>
+                        </div>
+
+                        <!-- Sample UI Controls -->
+                        <div class="space-y-3 pt-2">
+                            <div>
+                                <label class="block text-[11px] opacity-75 mb-1">Accent Action Button</label>
+                                <button id="sampleAccentBtn" class="w-full py-2 px-4 rounded-lg font-semibold text-white shadow-md transition-all flex items-center justify-center gap-2">
+                                    <i data-lucide="check" class="w-4 h-4"></i> Primary Accent Button
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-2.5 rounded-lg border border-white/10 space-y-2">
+                                    <span class="text-[11px] opacity-75 block font-medium">Controls</span>
+                                    <label class="flex items-center gap-2 cursor-pointer text-[11px]">
+                                        <input type="checkbox" checked id="sampleCheckbox" class="rounded accent-blue-600">
+                                        Enabled Checkbox
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer text-[11px]">
+                                        <input type="radio" checked name="sampleRadio" class="accent-blue-600">
+                                        Active Selection
+                                    </label>
+                                </div>
+
+                                <div class="p-2.5 rounded-lg border border-white/10 space-y-2">
+                                    <span class="text-[11px] opacity-75 block font-medium">Slider Accent</span>
+                                    <input type="range" min="0" max="100" value="70" class="w-full accent-blue-600 cursor-pointer">
+                                    <span class="text-[10px] opacity-60 block">Fluent System Slider</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WINDOWS 11 START MENU FLYOUT (POPUP) -->
+                <div id="startMenuFlyout" class="hidden absolute bottom-14 left-1/2 -translate-x-1/2 w-80 bg-slate-900/90 backdrop-blur-2xl border border-slate-700/80 rounded-2xl p-4 shadow-2xl z-30 transition-all duration-200">
+                    <div class="mb-3">
+                        <input type="text" placeholder="Type here to search..." class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none">
+                    </div>
+                    <div class="mb-2 flex items-center justify-between text-[11px] text-slate-400 px-1 font-semibold">
+                        <span>Pinned Apps</span>
+                        <span class="text-blue-400 cursor-pointer hover:underline">All apps &gt;</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 mb-4">
+                        <div class="flex flex-col items-center p-2 rounded-xl hover:bg-white/10 cursor-pointer">
+                            <i data-lucide="edge" class="w-6 h-6 text-blue-400 mb-1"></i>
+                            <span class="text-[10px]">Edge</span>
+                        </div>
+                        <div class="flex flex-col items-center p-2 rounded-xl hover:bg-white/10 cursor-pointer">
+                            <i data-lucide="file-text" class="w-6 h-6 text-emerald-400 mb-1"></i>
+                            <span class="text-[10px]">Word</span>
+                        </div>
+                        <div class="flex flex-col items-center p-2 rounded-xl hover:bg-white/10 cursor-pointer">
+                            <i data-lucide="mail" class="w-6 h-6 text-indigo-400 mb-1"></i>
+                            <span class="text-[10px]">Mail</span>
+                        </div>
+                        <div class="flex flex-col items-center p-2 rounded-xl hover:bg-white/10 cursor-pointer">
+                            <i data-lucide="settings" class="w-6 h-6 text-slate-300 mb-1"></i>
+                            <span class="text-[10px]">Settings</span>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-800 flex items-center justify-between px-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">W11</div>
+                            <span class="text-xs font-semibold">Windows User</span>
+                        </div>
+                        <i data-lucide="power" class="w-4 h-4 text-slate-400 hover:text-rose-400 cursor-pointer"></i>
+                    </div>
+                </div>
+
+                <!-- WINDOWS 11 CENTERED TASKBAR -->
+                <div id="winTaskbar" class="h-12 border-t border-white/10 backdrop-blur-2xl flex items-center justify-between px-4 relative z-20 transition-all">
+                    <!-- Left: Widgets / Empty spacer -->
+                    <div class="flex items-center gap-2 w-24">
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 hover:bg-white/10 px-2 py-1 rounded-md cursor-pointer">
+                            <i data-lucide="cloud-sun" class="w-4 h-4 text-amber-400"></i>
+                            <span>72°F</span>
+                        </div>
+                    </div>
+
+                    <!-- Center: Windows 11 Pinned App Icons -->
+                    <div class="flex items-center gap-1.5">
+                        <!-- Start Button -->
+                        <button id="winStartBtn" class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer group/start">
+                            <div class="grid grid-cols-2 gap-0.5 w-4 h-4 group-hover/start:scale-110 transition-transform">
+                                <span class="bg-blue-500 rounded-sm"></span>
+                                <span class="bg-blue-500 rounded-sm"></span>
+                                <span class="bg-blue-500 rounded-sm"></span>
+                                <span class="bg-blue-500 rounded-sm"></span>
+                            </div>
+                        </button>
+
+                        <button class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-300"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer">
+                            <i data-lucide="layout-grid" class="w-4 h-4 text-slate-300"></i>
+                        </button>
+                        
+                        <!-- Active Explorer Icon -->
+                        <button class="w-10 h-10 rounded-xl hover:bg-white/10 flex flex-col items-center justify-center transition-all cursor-pointer relative">
+                            <i data-lucide="folder" class="w-4 h-4 text-amber-400"></i>
+                            <span id="taskbarActiveIndicator" class="w-3 h-0.5 rounded-full bg-blue-500 absolute bottom-1"></span>
+                        </button>
+                    </div>
+
+                    <!-- Right: System Tray & Clock -->
+                    <div class="flex items-center gap-2 w-24 justify-end text-[11px] text-slate-300 font-medium">
+                        <div class="flex items-center gap-1 hover:bg-white/10 px-2 py-1 rounded-md cursor-pointer">
+                            <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                            <i data-lucide="battery" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <div class="text-right hover:bg-white/10 px-1.5 py-0.5 rounded-md cursor-pointer leading-tight">
+                            <div class="font-semibold" id="sysClockTime">12:00 PM</div>
+                            <div class="text-[9px] opacity-75" id="sysClockDate">8/23/2026</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Export Status Toast -->
+    <div id="exportStatusToast" class="fixed bottom-6 right-6 z-50 w-80 p-3.5 bg-slate-800/95 border border-slate-700 rounded-xl text-xs space-y-1 shadow-2xl backdrop-blur transition-all duration-300 opacity-0 translate-y-2 pointer-events-none">
+        <span class="font-semibold text-emerald-400 flex items-center gap-1.5" id="exportStatusTitle">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> Export Ready
+        </span>
+        <p class="text-[11px] text-slate-300" id="exportStatusDesc">Your Windows 11 theme file has been generated.</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/color_picker.js"></script>
+    <script src="js/ai_audio.js"></script>
+    <script src="js/ai_cursors.js"></script>
+    <script src="js/ai_icons.js"></script>
+    <script src="js/exporter.js"></script>
+    <script src="js/preview.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

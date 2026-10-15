@@ -1,0 +1,78 @@
+/* Windows 11 Theme Generator Custom Styling */
+
+:root {
+    --win-accent: #0078d4;
+    --win-accent-light: #2b88d8;
+    --win-accent-dark: #005a9e;
+    --win-accent-rgb: 0, 120, 212;
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(51, 65, 85, 0.8);
+    border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 1);
+}
+
+/* Color Swatch Circle */
+.swatch-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+.swatch-btn:hover {
+    transform: scale(1.08);
+}
+.swatch-btn.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 12px rgba(var(--win-accent-rgb), 0.6);
+}
+
+/* Mica / Acrylic Effect */
+.mica-panel {
+    background: rgba(32, 32, 32, 0.75);
+    backdrop-filter: blur(20px) saturate(125%);
+    -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+.mica-panel-light {
+    background: rgba(243, 243, 243, 0.82);
+    backdrop-filter: blur(20px) saturate(125%);
+    -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+/* Tab Active Highlights */
+.tab-btn.active {
+    color: #60a5fa;
+    border-bottom-color: #3b82f6;
+}
+
+/* Drag Over Animation */
+.drag-active {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    transform: scale(1.02);
+}
+
+/* Pulse Glow */
+@keyframes pulse-glow {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+}
+
+.pulse-glow {
+    animation: pulse-glow 2s infinite ease-in-out;
+}
