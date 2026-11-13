@@ -125,11 +125,15 @@ def _snap_window_to_monitor(
     SWP_SHOWWINDOW = 0x0040
     SW_RESTORE = 9
     GWL_STYLE = -16
+    GWL_EXSTYLE = -20
     WS_CAPTION = 0x00C00000
     WS_THICKFRAME = 0x00040000
     WS_MINIMIZEBOX = 0x00020000
     WS_MAXIMIZEBOX = 0x00010000
     WS_SYSMENU = 0x00080000
+    WS_EX_TOOLWINDOW = 0x00000080
+    WS_EX_APPWINDOW = 0x00040000
+    SW_HIDE = 0
 
     found_hwnd: list[int] = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -154,9 +158,13 @@ def _snap_window_to_monitor(
             hwnd = found_hwnd[0]
             user32.ShowWindow(hwnd, SW_RESTORE)
             if borderless:
+                user32.ShowWindow(hwnd, SW_HIDE)
                 style = user32.GetWindowLongW(hwnd, GWL_STYLE)
                 style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU)
                 user32.SetWindowLongW(hwnd, GWL_STYLE, style)
+                ex_style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+                ex_style = (ex_style | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW
+                user32.SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style)
             user32.SetWindowPos(
                 hwnd,
                 0,
