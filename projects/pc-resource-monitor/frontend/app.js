@@ -2,11 +2,16 @@
   const MAX_HISTORY = 60;
   const ARC_LENGTH = 246;
 
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("widget") === "1") {
+    document.body.classList.add("widget-mode");
+  }
+
   const state = {
     unit: localStorage.getItem("hud_unit") || "C",
     interval: parseFloat(localStorage.getItem("hud_interval") || "1"),
     sort: localStorage.getItem("hud_sort") || "cpu",
-    demo: new URLSearchParams(window.location.search).get("demo") === "1" ||
+    demo: params.get("demo") === "1" ||
           localStorage.getItem("hud_demo") === "1",
     ws: null,
     history: {

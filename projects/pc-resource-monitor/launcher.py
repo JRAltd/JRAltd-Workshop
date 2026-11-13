@@ -294,12 +294,93 @@ def _run_tray(
     icon.run()
 
 
+def _launch_widget_webview(
+    url: str,
+    target: dict[str, int | bool] | None,
+    use_tray: bool,
+) -> bool:
+    """Launch a true frameless, transparent desktop widget using pywebview (WebView2)."""
+    try:
+        import webview
+    except ImportError:
+        return False
+
+    x = int(target["x"]) if target else 0
+    y = int(target["y"]) if target else 0
+    w = int(target["width"]) if target else 515
+    h = int(target["height"]) if target else 1920
+
+    widget_url = f"{url}{'&' if '?' in url else '?'}widget=1"
+    window = webview.create_window(
+        "PC Resource Monitor",
+        widget_url,
+        x=x,
+        y=y,
+        width=w,
+        height=h,
+        frameless=True,
+        transparent=True,
+        easy_drag=False,
+    )
+
+    tray_icon = [None]
+
+    def _on_loaded():
+        hwnd = _snap_window_to_monitor("PC Resource Monitor", {"x": x, "y": y, "width": w, "height": h}, borderless=True, timeout=4.0)
+        if use_tray and sys.platform == "win32":
+            try:
+                import ctypes
+                import pystray
+
+                user32 = ctypes.windll.user32
+                SW_HIDE, SW_SHOW = 0, 5
+                SWP_NOZORDER, SWP_FRAMECHANGED, SWP_SHOWWINDOW = 0x0004, 0x0020, 0x0040
+                visible = [True]
+
+                def on_toggle(icon, item):
+                    if not hwnd:
+                        return
+                    user32.ShowWindow(hwnd, SW_HIDE if visible[0] else SW_SHOW)
+                    visible[0] = not visible[0]
+
+                def on_resnap(icon, item):
+                    if hwnd:
+                        user32.SetWindowPos(hwnd, 0, x, y, w, h, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW)
+                        user32.ShowWindow(hwnd, SW_SHOW)
+                        visible[0] = True
+
+                def on_quit(icon, item):
+                    icon.stop()
+                    window.destroy()
+
+                menu = pystray.Menu(
+                    pystray.MenuItem("Show / Hide Widget", on_toggle, default=True),
+                    pystray.MenuItem("Re-snap to Monitor", on_resnap),
+                    pystray.Menu.SEPARATOR,
+                    pystray.MenuItem("Quit", on_quit),
+                )
+                icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
+                tray_icon[0] = icon
+                icon.run_detached()
+            except Exception:
+                pass
+
+    webview.start(_on_loaded)
+    if tray_icon[0]:
+        try:
+            tray_icon[0].stop()
+        except Exception:
+            pass
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Launch the 515x1920 PC Resource Monitor")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765)")
     parser.add_argument("--demo", action="store_true", help="Start in simulated demo mode")
-    parser.add_argument("--no-browser", action="store_true", help="Run server only without opening browser")
+    parser.add_argument("--no-browser", action="store_true", help="Run server only without opening UI")
+    parser.add_argument("--browser", action="store_true", help="Force Edge/Chrome --app mode instead of native widget")
     parser.add_argument("--no-tray", action="store_true", help="Disable Windows system tray icon")
     parser.add_argument("--kiosk", action="store_true", help="Use --kiosk flag instead of --app window")
     parser.add_argument("--list-monitors", action="store_true", help="List detected Windows monitors and exit")
@@ -344,18 +425,22 @@ def main() -> None:
 
     print(f"PC Resource Monitor running at {url}")
 
+    monitors = list_windows_monitors()
+    target = next(
+        (m for m in monitors if m["width"] == 515 and m["height"] == 1920),
+        next((m for m in monitors if m["width"] < m["height"]), None),
+    )
+
+    if not args.no_browser and not args.browser and sys.platform == "win32":
+        if _launch_widget_webview(url, target, use_tray=not args.no_tray):
+            return
+
     browser_proc: subprocess.Popen[bytes] | None = None
-    target: dict[str, int | bool] | None = None
     hwnd: int | None = None
 
     if not args.no_browser:
         browser = find_browser()
         if browser:
-            monitors = list_windows_monitors()
-            target = next(
-                (m for m in monitors if m["width"] == 515 and m["height"] == 1920),
-                next((m for m in monitors if m["width"] < m["height"]), None),
-            )
             profile_dir = Path(tempfile.gettempdir()) / "pc-resource-monitor-profile"
             profile_dir.mkdir(parents=True, exist_ok=True)
 
