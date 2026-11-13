@@ -15,9 +15,14 @@ echo [1/3] Installing build dependencies (PyInstaller)...
 ".venv\Scripts\pip.exe" install -q -r requirements.txt pyinstaller
 ".venv\Scripts\python.exe" launcher.py --make-icon
 
+set "BUILD_ID=%RANDOM%-%RANDOM%"
+set "WORK_DIR=%TEMP%\pcrm-build-%BUILD_ID%"
+set "DIST_DIR=%TEMP%\pcrm-dist-%BUILD_ID%"
+
 echo [2/3] Building standalone PCResourceMonitor.exe...
 ".venv\Scripts\pyinstaller.exe" --noconfirm --onedir --windowed ^
-    --workpath "%TEMP%\pcrm-build-%RANDOM%" ^
+    --workpath "%WORK_DIR%" ^
+    --distpath "%DIST_DIR%" ^
     --name PCResourceMonitor ^
     --icon hud_icon.ico ^
     --add-data "frontend;frontend" ^
@@ -53,15 +58,15 @@ if "%ISCC%"=="" (
 )
 
 if not "%ISCC%"=="" (
-    "%ISCC%" installer.iss
+    "%ISCC%" "/DBuildDist=%DIST_DIR%\PCResourceMonitor" installer.iss
     echo.
     echo ============================================================
     echo Installer ready: dist\PCResourceMonitor-Setup.exe
     echo ============================================================
 ) else (
     echo.
-    echo Standalone app built at: dist\PCResourceMonitor\PCResourceMonitor.exe
-    echo To build Setup.exe, install Inno Setup 6 and run: iscc installer.iss
+    echo Standalone app built at: %DIST_DIR%\PCResourceMonitor\PCResourceMonitor.exe
+    echo To build Setup.exe, install Inno Setup 6 and run: iscc "/DBuildDist=%DIST_DIR%\PCResourceMonitor" installer.iss
 )
 
 pause

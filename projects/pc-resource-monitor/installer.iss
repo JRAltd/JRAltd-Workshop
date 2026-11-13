@@ -18,8 +18,12 @@ PrivilegesRequired=lowest
 Name: "desktopicon"; Description: "Create a &Desktop shortcut"; GroupDescription: "Additional shortcuts:"
 Name: "startupicon"; Description: "Launch automatically when Windows starts"; GroupDescription: "Startup:"; Flags: unchecked
 
+#ifndef BuildDist
+  #define BuildDist "dist\PCResourceMonitor"
+#endif
+
 [Files]
-Source: "dist\PCResourceMonitor\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#BuildDist}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\PC Resource Monitor"; Filename: "{app}\PCResourceMonitor.exe"
