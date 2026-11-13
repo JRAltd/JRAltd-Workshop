@@ -106,6 +106,57 @@ def wait_for_server(url: str, timeout: float = 10.0) -> bool:
     return False
 
 
+def _snap_window_to_monitor(
+    title_substr: str, target: dict[str, int | bool], timeout: float = 8.0
+) -> bool:
+    """Find the launched browser window by title and snap it to the target monitor."""
+    if sys.platform != "win32":
+        return False
+
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    SWP_NOZORDER = 0x0004
+    SWP_SHOWWINDOW = 0x0040
+    SW_RESTORE = 9
+
+    found_hwnd: list[int] = []
+    WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def _enum_cb(hwnd, lparam):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        length = user32.GetWindowTextLengthW(hwnd)
+        if length > 0:
+            buf = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buf, length + 1)
+            if title_substr in buf.value:
+                found_hwnd.append(hwnd)
+                return False
+        return True
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        found_hwnd.clear()
+        user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
+        if found_hwnd:
+            hwnd = found_hwnd[0]
+            user32.ShowWindow(hwnd, SW_RESTORE)
+            user32.SetWindowPos(
+                hwnd,
+                0,
+                int(target["x"]),
+                int(target["y"]),
+                int(target["width"]),
+                int(target["height"]),
+                SWP_NOZORDER | SWP_SHOWWINDOW,
+            )
+            return True
+        time.sleep(0.2)
+    return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Launch the 515x1920 PC Resource Monitor")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
@@ -163,6 +214,7 @@ def main() -> None:
                 f"--user-data-dir={profile_dir}",
                 "--no-first-run",
                 "--no-default-browser-check",
+                "--new-window",
             ]
             if args.kiosk:
                 cmd.extend(["--kiosk", url])
@@ -173,12 +225,15 @@ def main() -> None:
                 print(
                     f"Detected {target['width']}x{target['height']} monitor at ({target['x']}, {target['y']})"
                 )
-                cmd.append(f"--window-position={target['x']},{target['y']}")
-                cmd.append(f"--window-size={target['width']},{target['height']}")
             else:
                 cmd.append("--window-size=515,1920")
 
             browser_proc = subprocess.Popen(cmd)
+            if target:
+                if _snap_window_to_monitor("PC Resource Monitor", target):
+                    print("Snapped HUD window to portrait monitor.")
+                else:
+                    print(f"Window opened; move it to your portrait monitor or open {url}")
         else:
             print("Edge/Chrome not found. Open the URL manually in your browser:", url)
 

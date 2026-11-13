@@ -25,7 +25,7 @@
     const panel = $("hudPanel");
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    if (vw === 515 && vh === 1920) {
+    if (Math.abs(vw - 515) <= 4 && Math.abs(vh - 1920) <= 4) {
       panel.style.transform = "none";
       return;
     }
