@@ -1,1 +1,4 @@
 hud_icon.ico
+dist/
+build/
+*.spec

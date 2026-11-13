@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.telemetry import DemoTelemetryGenerator, SystemTelemetryCollector
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 app = FastAPI(title="PC Resource Monitor (515x1920)", version="1.0.0")

@@ -328,9 +328,11 @@ def main() -> None:
     if args.demo:
         url += "?demo=1"
 
+    from backend.server import app as fastapi_app
+
     server_thread = threading.Thread(
         target=uvicorn.run,
-        args=("backend.server:app",),
+        args=(fastapi_app,),
         kwargs={"host": args.host, "port": args.port, "log_level": "warning"},
         daemon=True,
     )
