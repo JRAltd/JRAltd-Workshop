@@ -16,6 +16,17 @@ from pathlib import Path
 import uvicorn
 
 
+def _setup_windowed_logging() -> None:
+    """Ensure stdout/stderr are never None in PyInstaller --windowed mode."""
+    if sys.stdout is None or sys.stderr is None:
+        log_path = Path(tempfile.gettempdir()) / "PCResourceMonitor.log"
+        log_file = open(log_path, "a", encoding="utf-8", buffering=1)
+        if sys.stdout is None:
+            sys.stdout = log_file
+        if sys.stderr is None:
+            sys.stderr = log_file
+
+
 def _enable_per_monitor_dpi() -> None:
     """Enable Per-Monitor DPI Awareness v2 so mixed-DPI monitors report true coordinates."""
     if sys.platform != "win32":
