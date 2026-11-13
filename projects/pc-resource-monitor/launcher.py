@@ -365,16 +365,24 @@ def _launch_widget_webview(
             except Exception:
                 pass
 
-    webview.start(_on_loaded)
-    if tray_icon[0]:
-        try:
-            tray_icon[0].stop()
-        except Exception:
-            pass
+    try:
+        webview.start(_on_loaded)
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        print(f"pywebview widget failed ({exc}), falling back to browser mode.")
+        return False
+    finally:
+        if tray_icon[0]:
+            try:
+                tray_icon[0].stop()
+            except Exception:
+                pass
     return True
 
 
 def main() -> None:
+    _setup_windowed_logging()
     parser = argparse.ArgumentParser(description="Launch the 515x1920 PC Resource Monitor")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765)")
@@ -414,7 +422,7 @@ def main() -> None:
     server_thread = threading.Thread(
         target=uvicorn.run,
         args=(fastapi_app,),
-        kwargs={"host": args.host, "port": args.port, "log_level": "warning"},
+        kwargs={"host": args.host, "port": args.port, "log_level": "warning", "log_config": None},
         daemon=True,
     )
     server_thread.start()

@@ -21,6 +21,8 @@ echo [2/3] Building standalone PCResourceMonitor.exe...
     --icon hud_icon.ico ^
     --add-data "frontend;frontend" ^
     --collect-all webview ^
+    --collect-all pythonnet ^
+    --collect-all clr_loader ^
     --hidden-import uvicorn.logging ^
     --hidden-import uvicorn.loops.auto ^
     --hidden-import uvicorn.protocols.http.auto ^
