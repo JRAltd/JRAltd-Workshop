@@ -134,6 +134,7 @@ def _snap_window_to_monitor(
     WS_EX_TOOLWINDOW = 0x00000080
     WS_EX_APPWINDOW = 0x00040000
     SW_HIDE = 0
+    SW_SHOW = 5
 
     found_hwnd: list[int] = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -174,6 +175,7 @@ def _snap_window_to_monitor(
                 int(target["height"]),
                 SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
             )
+            user32.ShowWindow(hwnd, SW_SHOW)
             return True
         time.sleep(0.2)
     return False
