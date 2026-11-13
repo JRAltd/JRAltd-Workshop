@@ -16,7 +16,8 @@ echo [1/3] Installing build dependencies (PyInstaller)...
 ".venv\Scripts\python.exe" launcher.py --make-icon
 
 echo [2/3] Building standalone PCResourceMonitor.exe...
-".venv\Scripts\pyinstaller.exe" --noconfirm --clean --onedir --windowed ^
+".venv\Scripts\pyinstaller.exe" --noconfirm --onedir --windowed ^
+    --workpath "%TEMP%\pcrm-build-%RANDOM%" ^
     --name PCResourceMonitor ^
     --icon hud_icon.ico ^
     --add-data "frontend;frontend" ^
