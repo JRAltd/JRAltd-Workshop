@@ -111,10 +111,10 @@ def _snap_window_to_monitor(
     target: dict[str, int | bool],
     borderless: bool = True,
     timeout: float = 8.0,
-) -> bool:
-    """Find the launched browser window by title and snap it to the target monitor."""
+) -> int | None:
+    """Find the launched browser window by title, snap it to target monitor, and return HWND."""
     if sys.platform != "win32":
-        return False
+        return None
 
     import ctypes
     from ctypes import wintypes
@@ -176,9 +176,96 @@ def _snap_window_to_monitor(
                 SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
             )
             user32.ShowWindow(hwnd, SW_SHOW)
-            return True
+            return hwnd
         time.sleep(0.2)
-    return False
+    return None
+
+
+def _build_tray_image():
+    """Create a crisp dark-telemetry HUD icon using Pillow."""
+    from PIL import Image, ImageDraw
+
+    size = 64
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Dark rounded badge
+    draw.rounded_rectangle([2, 2, size - 3, size - 3], radius=14, fill=(10, 15, 22, 255), outline=(34, 211, 238, 220), width=3)
+    # Telemetry arc & bars
+    draw.arc([12, 12, size - 12, size - 12], start=135, end=45, fill=(34, 211, 238, 255), width=5)
+    draw.rectangle([22, 36, 27, 48], fill=(16, 185, 129, 255))
+    draw.rectangle([30, 28, 35, 48], fill=(34, 211, 238, 255))
+    draw.rectangle([38, 32, 43, 48], fill=(56, 189, 248, 255))
+    return img
+
+
+def ensure_ico_file(path: Path) -> Path | None:
+    """Save an .ico file for the Windows Desktop shortcut."""
+    try:
+        img = _build_tray_image()
+        img.save(path, format="ICO", sizes=[(64, 64), (32, 32), (16, 16)])
+        return path
+    except Exception:
+        return None
+
+
+def _run_tray(
+    hwnd: int | None,
+    target: dict[str, int | bool] | None,
+    browser_proc: subprocess.Popen[bytes] | None,
+) -> None:
+    """Run the Windows System Tray icon (right side of taskbar)."""
+    import ctypes
+    import pystray
+
+    user32 = ctypes.windll.user32
+    SW_HIDE = 0
+    SW_SHOW = 5
+    WM_CLOSE = 0x0010
+    SWP_NOZORDER = 0x0004
+    SWP_FRAMECHANGED = 0x0020
+    SWP_SHOWWINDOW = 0x0040
+    visible = [True]
+
+    def on_toggle(icon, item):
+        if not hwnd:
+            return
+        if visible[0]:
+            user32.ShowWindow(hwnd, SW_HIDE)
+            visible[0] = False
+        else:
+            user32.ShowWindow(hwnd, SW_SHOW)
+            visible[0] = True
+
+    def on_resnap(icon, item):
+        if hwnd and target:
+            user32.SetWindowPos(
+                hwnd,
+                0,
+                int(target["x"]),
+                int(target["y"]),
+                int(target["width"]),
+                int(target["height"]),
+                SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+            )
+            user32.ShowWindow(hwnd, SW_SHOW)
+            visible[0] = True
+
+    def on_quit(icon, item):
+        if hwnd:
+            user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
+        if browser_proc and browser_proc.poll() is None:
+            browser_proc.terminate()
+        icon.stop()
+
+    menu = pystray.Menu(
+        pystray.MenuItem("Show / Hide HUD", on_toggle, default=True),
+        pystray.MenuItem("Re-snap to Monitor", on_resnap),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Quit", on_quit),
+    )
+
+    icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
+    icon.run()
 
 
 def main() -> None:
@@ -187,9 +274,17 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765)")
     parser.add_argument("--demo", action="store_true", help="Start in simulated demo mode")
     parser.add_argument("--no-browser", action="store_true", help="Run server only without opening browser")
+    parser.add_argument("--no-tray", action="store_true", help="Disable Windows system tray icon")
     parser.add_argument("--kiosk", action="store_true", help="Use --kiosk flag instead of --app window")
     parser.add_argument("--list-monitors", action="store_true", help="List detected Windows monitors and exit")
+    parser.add_argument("--make-icon", action="store_true", help="Generate hud_icon.ico and exit")
     args = parser.parse_args()
+
+    if args.make_icon:
+        ico_path = Path(__file__).resolve().parent / "hud_icon.ico"
+        ensure_ico_file(ico_path)
+        print(f"Generated {ico_path}")
+        return
 
     if args.list_monitors:
         mons = list_windows_monitors()
@@ -222,6 +317,9 @@ def main() -> None:
     print(f"PC Resource Monitor running at {url}")
 
     browser_proc: subprocess.Popen[bytes] | None = None
+    target: dict[str, int | bool] | None = None
+    hwnd: int | None = None
+
     if not args.no_browser:
         browser = find_browser()
         if browser:
@@ -254,12 +352,20 @@ def main() -> None:
 
             browser_proc = subprocess.Popen(cmd)
             if target:
-                if _snap_window_to_monitor("PC Resource Monitor", target):
+                hwnd = _snap_window_to_monitor("PC Resource Monitor", target)
+                if hwnd:
                     print("Snapped HUD window to portrait monitor.")
                 else:
                     print(f"Window opened; move it to your portrait monitor or open {url}")
         else:
             print("Edge/Chrome not found. Open the URL manually in your browser:", url)
+
+    if sys.platform == "win32" and not args.no_tray:
+        try:
+            _run_tray(hwnd, target, browser_proc)
+            return
+        except Exception as exc:
+            print(f"Tray icon unavailable ({exc}); running in console mode.")
 
     try:
         if browser_proc:
