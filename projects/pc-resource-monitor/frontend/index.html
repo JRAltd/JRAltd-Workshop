@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC Resource Monitor — 515×1920 HUD</title>
+  <meta name="description" content="Precision 515x1920 vertical telemetry HUD for Windows PC hardware monitoring." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="hud-viewport" id="hudViewport">
+    <div class="hud-panel" id="hudPanel">
+      <!-- 1. HEADER STRIP -->
+      <header class="hud-header">
+        <div class="header-left">
+          <div class="status-row">
+            <span class="status-dot" id="connDot" title="Connection Status"></span>
+            <span class="hostname" id="hostname">WORKSTATION</span>
+            <span class="mode-badge" id="modeBadge">LIVE</span>
+          </div>
+          <div class="sys-meta" id="sysMeta">Windows 11 • Up 0d 00h 00m</div>
+        </div>
+        <div class="header-right">
+          <div class="clock-block">
+            <div class="clock-time" id="clockTime">00:00:00</div>
+            <div class="clock-date" id="clockDate">--- --, ----</div>
+          </div>
+          <button class="icon-btn" id="settingsBtn" type="button" aria-label="Open Settings" title="Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Settings Popover -->
+      <section class="settings-drawer" id="settingsDrawer" hidden>
+        <div class="settings-title">HUD CONFIGURATION</div>
+        <div class="setting-row">
+          <span>Telemetry Source</span>
+          <div class="segmented" id="modeToggle">
+            <button type="button" data-mode="live" class="active">Live</button>
+            <button type="button" data-mode="demo">Demo</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span>Temperature Unit</span>
+          <div class="segmented" id="unitToggle">
+            <button type="button" data-unit="C" class="active">°C</button>
+            <button type="button" data-unit="F">°F</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span>Poll Interval</span>
+          <div class="segmented" id="intervalToggle">
+            <button type="button" data-interval="0.5">0.5s</button>
+            <button type="button" data-interval="1" class="active">1.0s</button>
+            <button type="button" data-interval="2">2.0s</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. CPU TELEMETRY -->
+      <section class="card card-cpu" aria-label="CPU Telemetry">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">PROCESSOR</span>
+            <h2 class="card-name" id="cpuName">Detecting CPU...</h2>
+          </div>
+          <span class="chip" id="cpuTopology">--C / --T</span>
+        </div>
+
+        <div class="gauge-row">
+          <div class="arc-gauge">
+            <svg viewBox="0 0 140 124" class="gauge-svg">
+              <defs>
+                <linearGradient id="cpuGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#22d3ee" />
+                  <stop offset="100%" stop-color="#38bdf8" />
+                </linearGradient>
+              </defs>
+              <path class="gauge-track" d="M 22 104 A 56 56 0 1 1 118 104" />
+              <path class="gauge-fill" id="cpuArc" stroke="url(#cpuGrad)" d="M 22 104 A 56 56 0 1 1 118 104" />
+            </svg>
+            <div class="gauge-center">
+              <div class="gauge-val" id="cpuPct">0<span class="unit">%</span></div>
+              <div class="gauge-sub">LOAD</div>
+            </div>
+          </div>
+
+          <div class="metric-stack">
+            <div class="stat-box">
+              <span class="stat-label">CLOCK</span>
+              <span class="stat-value" id="cpuFreq">-- GHz</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">PACKAGE TEMP</span>
+              <span class="stat-value" id="cpuTemp">--</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">60S PEAK</span>
+              <span class="stat-value" id="cpuPeak">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <svg class="sparkline-svg" id="cpuSpark" viewBox="0 0 440 52" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="cpuSparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path class="spark-area" id="cpuSparkArea" fill="url(#cpuSparkFill)" d="" />
+            <path class="spark-line" id="cpuSparkLine" stroke="#22d3ee" d="" />
+          </svg>
+        </div>
+
+        <div class="cores-grid" id="coresGrid"></div>
+      </section>
+
+      <!-- 3. GPU TELEMETRY -->
+      <section class="card card-gpu" aria-label="GPU Telemetry">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">GRAPHICS</span>
+            <h2 class="card-name" id="gpuName">Detecting GPU...</h2>
+          </div>
+          <span class="chip chip-emerald" id="gpuFan">FAN --%</span>
+        </div>
+
+        <div class="gauge-row">
+          <div class="arc-gauge">
+            <svg viewBox="0 0 140 124" class="gauge-svg">
+              <defs>
+                <linearGradient id="gpuGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#10b981" />
+                  <stop offset="100%" stop-color="#34d399" />
+                </linearGradient>
+              </defs>
+              <path class="gauge-track" d="M 22 104 A 56 56 0 1 1 118 104" />
+              <path class="gauge-fill" id="gpuArc" stroke="url(#gpuGrad)" d="M 22 104 A 56 56 0 1 1 118 104" />
+            </svg>
+            <div class="gauge-center">
+              <div class="gauge-val" id="gpuPct">0<span class="unit">%</span></div>
+              <div class="gauge-sub">CORE</div>
+            </div>
+          </div>
+
+          <div class="metric-stack">
+            <div class="stat-box">
+              <span class="stat-label">TEMP</span>
+              <span class="stat-value" id="gpuTemp">--</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">POWER DRAW</span>
+              <span class="stat-value" id="gpuPower">-- W</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">CORE CLOCK</span>
+              <span class="stat-value" id="gpuClock">-- MHz</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <svg class="sparkline-svg" id="gpuSpark" viewBox="0 0 440 46" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gpuSparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path class="spark-area" id="gpuSparkArea" fill="url(#gpuSparkFill)" d="" />
+            <path class="spark-line" id="gpuSparkLine" stroke="#10b981" d="" />
+          </svg>
+        </div>
+
+        <div class="bar-block">
+          <div class="bar-label-row">
+            <span>VRAM ALLOCATION</span>
+            <span class="mono" id="vramText">0.0 / 0.0 GB (0%)</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill fill-emerald" id="vramBar" style="width: 0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. MEMORY (RAM) -->
+      <section class="card card-ram" aria-label="Memory Telemetry">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">SYSTEM MEMORY</span>
+            <h2 class="card-name" id="ramSummary">0.0 / 0.0 GB</h2>
+          </div>
+          <span class="big-pct" id="ramPct">0%</span>
+        </div>
+
+        <div class="progress-track progress-lg">
+          <div class="progress-fill fill-cyan" id="ramBar" style="width: 0%"></div>
+        </div>
+
+        <div class="ram-footer">
+          <span>Available: <strong class="mono" id="ramAvail">-- GB</strong></span>
+          <span>Pagefile: <strong class="mono" id="ramSwap">-- / -- GB</strong></span>
+        </div>
+
+        <div class="sparkline-wrap sparkline-sm">
+          <svg class="sparkline-svg" viewBox="0 0 440 36" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="ramSparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.24" />
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path class="spark-area" id="ramSparkArea" fill="url(#ramSparkFill)" d="" />
+            <path class="spark-line" id="ramSparkLine" stroke="#38bdf8" d="" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- 5. NETWORK I/O -->
+      <section class="card card-net" aria-label="Network Telemetry">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">NETWORK I/O</span>
+            <h2 class="card-name" id="netIp">127.0.0.1</h2>
+          </div>
+          <span class="chip" id="netTotals">↓ 0 GB • ↑ 0 GB</span>
+        </div>
+
+        <div class="net-rates">
+          <div class="net-box">
+            <span class="net-dir down">▼ DOWN</span>
+            <span class="net-speed" id="netDown">0.0 KB/s</span>
+          </div>
+          <div class="net-box">
+            <span class="net-dir up">▲ UP</span>
+            <span class="net-speed" id="netUp">0.0 KB/s</span>
+          </div>
+        </div>
+
+        <div class="sparkline-wrap sparkline-sm">
+          <svg class="sparkline-svg" viewBox="0 0 440 48" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="netDownFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path class="spark-area" id="netDownArea" fill="url(#netDownFill)" d="" />
+            <path class="spark-line" id="netDownLine" stroke="#22d3ee" d="" />
+            <path class="spark-line" id="netUpLine" stroke="#f59e0b" stroke-dasharray="4 3" d="" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- 6. STORAGE & DISK I/O -->
+      <section class="card card-storage" aria-label="Storage Telemetry">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">STORAGE &amp; DISK I/O</span>
+          </div>
+          <div class="disk-io-pills">
+            <span class="io-pill">R <strong id="diskRead">0 MB/s</strong></span>
+            <span class="io-pill">W <strong id="diskWrite">0 MB/s</strong></span>
+          </div>
+        </div>
+        <div class="drives-list" id="drivesList"></div>
+      </section>
+
+      <!-- 7. TOP PROCESSES -->
+      <section class="card card-procs" aria-label="Top Processes">
+        <div class="card-head">
+          <div class="card-title-group">
+            <span class="card-kicker">TOP PROCESSES</span>
+          </div>
+          <div class="segmented segmented-sm" id="procSortToggle">
+            <button type="button" data-sort="cpu" class="active">CPU</button>
+            <button type="button" data-sort="ram">RAM</button>
+          </div>
+        </div>
+        <div class="procs-list" id="procsList"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
