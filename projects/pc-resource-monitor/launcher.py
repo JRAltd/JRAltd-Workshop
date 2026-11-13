@@ -16,6 +16,23 @@ from pathlib import Path
 import uvicorn
 
 
+def _enable_per_monitor_dpi() -> None:
+    """Enable Per-Monitor DPI Awareness v2 so mixed-DPI monitors report true coordinates."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    try:
+        # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+        user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+    except Exception:
+        try:
+            user32.SetProcessDPIAware()
+        except Exception:
+            pass
+
+
 def list_windows_monitors() -> list[dict[str, int | bool]]:
     """Return connected monitor rectangles on Windows using Win32 ctypes."""
     if sys.platform != "win32":
@@ -24,11 +41,8 @@ def list_windows_monitors() -> list[dict[str, int | bool]]:
     import ctypes
     from ctypes import wintypes
 
+    _enable_per_monitor_dpi()
     user32 = ctypes.windll.user32
-    try:
-        user32.SetProcessDPIAware()
-    except Exception:
-        pass
 
     class RECT(ctypes.Structure):
         _fields_ = [
