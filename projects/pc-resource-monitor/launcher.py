@@ -172,6 +172,17 @@ def _snap_window_to_monitor(
         if found_hwnd:
             hwnd = found_hwnd[0]
             user32.ShowWindow(hwnd, SW_RESTORE)
+            # First move onto target monitor so Windows triggers WM_DPICHANGED if DPI differs
+            user32.SetWindowPos(
+                hwnd,
+                0,
+                int(target["x"]),
+                int(target["y"]),
+                int(target["width"]),
+                int(target["height"]),
+                SWP_NOZORDER | SWP_SHOWWINDOW,
+            )
+            time.sleep(0.35)
             if borderless:
                 user32.ShowWindow(hwnd, SW_HIDE)
                 style = user32.GetWindowLongW(hwnd, GWL_STYLE)
@@ -180,6 +191,7 @@ def _snap_window_to_monitor(
                 ex_style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
                 ex_style = (ex_style | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW
                 user32.SetWindowLongW(hwnd, GWL_EXSTYLE, ex_style)
+            # Re-apply exact monitor rect after WM_DPICHANGED and style strip
             user32.SetWindowPos(
                 hwnd,
                 0,
