@@ -50,18 +50,19 @@ body {
   position: relative;
   width: 515px;
   height: 1920px;
+  flex-shrink: 0;
   background: radial-gradient(circle at 15% 4%, rgba(34, 211, 238, 0.06), transparent 36%),
               radial-gradient(circle at 88% 36%, rgba(16, 185, 129, 0.045), transparent 38%),
               var(--bg-panel);
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 9px;
   overflow: hidden;
   transform-origin: center center;
 }
 
-@media (min-width: 560px) {
+@media (min-width: 900px) {
   .hud-panel {
     border: 1px solid rgba(148, 163, 184, 0.16);
     border-radius: 14px;

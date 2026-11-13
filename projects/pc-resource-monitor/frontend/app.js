@@ -25,12 +25,12 @@
     const panel = $("hudPanel");
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    if (Math.abs(vw - 515) <= 4 && Math.abs(vh - 1920) <= 4) {
+    if (Math.abs(vw - 515) <= 2 && Math.abs(vh - 1920) <= 2) {
       panel.style.transform = "none";
       return;
     }
-    const scale = Math.min(vw / 515, vh / 1920, 1);
-    panel.style.transform = scale < 0.995 ? `scale(${scale.toFixed(4)})` : "none";
+    const scale = Math.min(vw / 515, vh / 1920);
+    panel.style.transform = `scale(${scale.toFixed(4)})`;
   }
 
   window.addEventListener("resize", fitPanel);
