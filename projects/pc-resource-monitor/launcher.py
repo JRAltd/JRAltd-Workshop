@@ -107,7 +107,10 @@ def wait_for_server(url: str, timeout: float = 10.0) -> bool:
 
 
 def _snap_window_to_monitor(
-    title_substr: str, target: dict[str, int | bool], timeout: float = 8.0
+    title_substr: str,
+    target: dict[str, int | bool],
+    borderless: bool = True,
+    timeout: float = 8.0,
 ) -> bool:
     """Find the launched browser window by title and snap it to the target monitor."""
     if sys.platform != "win32":
@@ -118,8 +121,15 @@ def _snap_window_to_monitor(
 
     user32 = ctypes.windll.user32
     SWP_NOZORDER = 0x0004
+    SWP_FRAMECHANGED = 0x0020
     SWP_SHOWWINDOW = 0x0040
     SW_RESTORE = 9
+    GWL_STYLE = -16
+    WS_CAPTION = 0x00C00000
+    WS_THICKFRAME = 0x00040000
+    WS_MINIMIZEBOX = 0x00020000
+    WS_MAXIMIZEBOX = 0x00010000
+    WS_SYSMENU = 0x00080000
 
     found_hwnd: list[int] = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -143,6 +153,10 @@ def _snap_window_to_monitor(
         if found_hwnd:
             hwnd = found_hwnd[0]
             user32.ShowWindow(hwnd, SW_RESTORE)
+            if borderless:
+                style = user32.GetWindowLongW(hwnd, GWL_STYLE)
+                style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU)
+                user32.SetWindowLongW(hwnd, GWL_STYLE, style)
             user32.SetWindowPos(
                 hwnd,
                 0,
@@ -150,7 +164,7 @@ def _snap_window_to_monitor(
                 int(target["y"]),
                 int(target["width"]),
                 int(target["height"]),
-                SWP_NOZORDER | SWP_SHOWWINDOW,
+                SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
             )
             return True
         time.sleep(0.2)
