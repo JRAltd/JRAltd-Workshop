@@ -1,7 +1,11 @@
+#ifndef AppVersion
+  #define AppVersion "1.0.2"
+#endif
+
 [Setup]
 AppId={{8D6B2A1E-5C3F-4B9E-9A12-515192000001}
 AppName=PC Resource Monitor
-AppVersion=1.0.1
+AppVersion={#AppVersion}
 AppPublisher=JRAltd
 DefaultDirName={localappdata}\Programs\PC Resource Monitor
 DefaultGroupName=PC Resource Monitor
@@ -13,6 +17,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
+CloseApplications=yes
+RestartApplications=yes
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &Desktop shortcut"; GroupDescription: "Additional shortcuts:"

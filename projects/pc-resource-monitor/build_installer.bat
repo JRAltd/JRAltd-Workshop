@@ -26,6 +26,7 @@ echo [2/3] Building standalone PCResourceMonitor.exe...
     --name PCResourceMonitor ^
     --icon hud_icon.ico ^
     --add-data "frontend;frontend" ^
+    --add-data "VERSION;." ^
     --collect-all webview ^
     --collect-all pythonnet ^
     --collect-all clr_loader ^

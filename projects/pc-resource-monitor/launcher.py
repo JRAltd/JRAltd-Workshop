@@ -245,6 +245,91 @@ def ensure_ico_file(path: Path) -> Path | None:
         return None
 
 
+def get_app_version() -> str:
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    ver_file = base / "VERSION"
+    if ver_file.exists():
+        return ver_file.read_text(encoding="utf-8").strip()
+    return "1.0.2"
+
+
+def _parse_version(ver: str) -> tuple[int, ...]:
+    parts = []
+    for chunk in ver.lstrip("v").split("."):
+        digits = "".join(ch for ch in chunk if ch.isdigit())
+        parts.append(int(digits) if digits else 0)
+    return tuple(parts)
+
+
+def _check_and_install_update(on_before_exit=None, icon=None, manual: bool = False) -> None:
+    """Check GitHub Releases for a newer pc-resource-monitor-v* installer and self-update silently."""
+    import json
+
+    current = get_app_version()
+    api_url = "https://api.github.com/repos/JRAltd/JRAltd-Workshop/releases?per_page=20"
+    try:
+        req = urllib.request.Request(api_url, headers={"User-Agent": "PCResourceMonitor"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            releases = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"Update check failed: {exc}")
+        return
+
+    prefix = "pc-resource-monitor-v"
+    best_ver = _parse_version(current)
+    best_asset_url = None
+    best_tag = None
+
+    for rel in releases:
+        tag = rel.get("tag_name", "")
+        if not tag.startswith(prefix) or rel.get("draft") or rel.get("prerelease"):
+            continue
+        ver_str = tag[len(prefix):]
+        ver_tuple = _parse_version(ver_str)
+        if ver_tuple > best_ver:
+            for asset in rel.get("assets", []):
+                if asset.get("name") == "PCResourceMonitor-Setup.exe":
+                    best_ver = ver_tuple
+                    best_asset_url = asset.get("browser_download_url")
+                    best_tag = tag
+                    break
+
+    if not best_asset_url:
+        if manual and icon:
+            try:
+                icon.notify(f"You're on the latest version (v{current}).", "PC Resource Monitor")
+            except Exception:
+                pass
+        return
+
+    if icon:
+        try:
+            icon.notify(f"Downloading update {best_tag}...", "PC Resource Monitor")
+        except Exception:
+            pass
+
+    setup_path = Path(tempfile.gettempdir()) / "PCResourceMonitor-Setup.exe"
+    try:
+        req = urllib.request.Request(best_asset_url, headers={"User-Agent": "PCResourceMonitor"})
+        with urllib.request.urlopen(req, timeout=60) as resp, open(setup_path, "wb") as out:
+            shutil.copyfileobj(resp, out)
+    except Exception as exc:
+        print(f"Update download failed: {exc}")
+        return
+
+    if on_before_exit:
+        try:
+            on_before_exit()
+        except Exception:
+            pass
+
+    subprocess.Popen(
+        [str(setup_path), "/SILENT", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
+        close_fds=True,
+    )
+    os._exit(0)
+
+
 def _run_tray(
     hwnd: int | None,
     target: dict[str, int | bool] | None,
@@ -287,21 +372,38 @@ def _run_tray(
             user32.ShowWindow(hwnd, SW_SHOW)
             visible[0] = True
 
-    def on_quit(icon, item):
+    def _cleanup():
         if hwnd:
             user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
         if browser_proc and browser_proc.poll() is None:
             browser_proc.terminate()
+
+    def on_update(icon, item):
+        threading.Thread(
+            target=_check_and_install_update,
+            kwargs={"on_before_exit": _cleanup, "icon": icon, "manual": True},
+            daemon=True,
+        ).start()
+
+    def on_quit(icon, item):
+        _cleanup()
         icon.stop()
 
     menu = pystray.Menu(
         pystray.MenuItem("Show / Hide HUD", on_toggle, default=True),
         pystray.MenuItem("Re-snap to Monitor", on_resnap),
+        pystray.MenuItem(f"Check for Updates (v{get_app_version()})", on_update),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", on_quit),
     )
 
     icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
+    if getattr(sys, "frozen", False):
+        threading.Timer(
+            4.0,
+            _check_and_install_update,
+            kwargs={"on_before_exit": _cleanup, "icon": icon, "manual": False},
+        ).start()
     icon.run()
 
 
@@ -360,19 +462,39 @@ def _launch_widget_webview(
                         user32.ShowWindow(hwnd, SW_SHOW)
                         visible[0] = True
 
+                def _cleanup():
+                    try:
+                        window.destroy()
+                    except Exception:
+                        pass
+
+                def on_update(icon, item):
+                    threading.Thread(
+                        target=_check_and_install_update,
+                        kwargs={"on_before_exit": _cleanup, "icon": icon, "manual": True},
+                        daemon=True,
+                    ).start()
+
                 def on_quit(icon, item):
                     icon.stop()
-                    window.destroy()
+                    _cleanup()
 
                 menu = pystray.Menu(
                     pystray.MenuItem("Show / Hide Widget", on_toggle, default=True),
                     pystray.MenuItem("Re-snap to Monitor", on_resnap),
+                    pystray.MenuItem(f"Check for Updates (v{get_app_version()})", on_update),
                     pystray.Menu.SEPARATOR,
                     pystray.MenuItem("Quit", on_quit),
                 )
                 icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
                 tray_icon[0] = icon
                 icon.run_detached()
+                if getattr(sys, "frozen", False):
+                    threading.Timer(
+                        4.0,
+                        _check_and_install_update,
+                        kwargs={"on_before_exit": _cleanup, "icon": icon, "manual": False},
+                    ).start()
             except Exception:
                 pass
 
