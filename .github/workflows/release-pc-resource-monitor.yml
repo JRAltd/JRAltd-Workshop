@@ -40,8 +40,8 @@ jobs:
           } else {
             $tag = "pc-resource-monitor-v$ver"
           }
-          $exists = git tag -l $tag
-          $shouldRelease = ($exists -eq "") -or ("${{ github.ref }}" -like "refs/tags/*") -or ("${{ github.event_name }}" -eq "workflow_dispatch")
+          $exists = (git tag -l $tag) | Out-String
+          $shouldRelease = [string]::IsNullOrWhiteSpace($exists) -or ("${{ github.ref }}" -like "refs/tags/*") -or ("${{ github.event_name }}" -eq "workflow_dispatch")
           "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "should_release=$shouldRelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
