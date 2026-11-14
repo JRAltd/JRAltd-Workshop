@@ -298,10 +298,10 @@ body.widget-mode .card {
   background: var(--bg-card);
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 18px;
-  padding: 12px 15px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -319,7 +319,7 @@ body.widget-mode .card {
 .card-kicker {
   display: block;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--text-secondary);
@@ -327,8 +327,8 @@ body.widget-mode .card {
 }
 
 .card-name {
-  font-size: 16.5px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -337,12 +337,12 @@ body.widget-mode .card {
 
 .chip {
   font-family: var(--font-mono);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--cyan);
   background: rgba(34, 211, 238, 0.1);
   border: 1px solid rgba(34, 211, 238, 0.24);
-  padding: 4px 9px;
+  padding: 4px 10px;
   border-radius: 8px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -357,36 +357,36 @@ body.widget-mode .card {
 /* Arc Gauge + Stat Stack */
 .gauge-row {
   display: grid;
-  grid-template-columns: 152px 1fr;
+  grid-template-columns: 168px 1fr;
   gap: 14px;
   align-items: center;
 }
 
 .arc-gauge {
   position: relative;
-  width: 152px;
-  height: 124px;
+  width: 168px;
+  height: 138px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .gauge-svg {
-  width: 148px;
-  height: 124px;
+  width: 164px;
+  height: 138px;
   overflow: visible;
 }
 
 .gauge-track {
   fill: none;
   stroke: rgba(148, 163, 184, 0.12);
-  stroke-width: 11;
+  stroke-width: 12;
   stroke-linecap: round;
 }
 
 .gauge-fill {
   fill: none;
-  stroke-width: 11;
+  stroke-width: 12;
   stroke-linecap: round;
   stroke-dasharray: 246;
   stroke-dashoffset: 246;
@@ -403,7 +403,7 @@ body.widget-mode .card {
 
 .gauge-val {
   font-family: var(--font-mono);
-  font-size: 38px;
+  font-size: 46px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -411,7 +411,7 @@ body.widget-mode .card {
 }
 
 .gauge-val .unit {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 600;
   color: var(--text-secondary);
   margin-left: 1px;
@@ -419,24 +419,24 @@ body.widget-mode .card {
 
 .gauge-sub {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .metric-stack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .stat-box {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 7px 11px;
+  padding: 9px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -444,15 +444,15 @@ body.widget-mode .card {
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 15.5px;
+  font-size: 19px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -463,12 +463,12 @@ body.widget-mode .card {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 4px 6px 2px;
-  height: 46px;
+  padding: 5px 6px 3px;
+  height: 54px;
 }
 
 .sparkline-sm {
-  height: 36px;
+  height: 44px;
 }
 
 .sparkline-svg {
@@ -479,80 +479,42 @@ body.widget-mode .card {
 
 .spark-line {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-/* Per-Core Grid */
+/* Hide micro per-core grid to prioritize large floor-readable fonts */
 .cores-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 5px;
-}
-
-.core-cell {
-  background: var(--bg-inset);
-  border: 1px solid var(--border-subtle);
-  border-radius: 7px;
-  padding: 4px 3px 3px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.core-bar-track {
-  width: 100%;
-  height: 22px;
-  background: rgba(148, 163, 184, 0.09);
-  border-radius: 3px;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-
-.core-bar-fill {
-  width: 100%;
-  background: var(--cyan);
-  border-radius: 3px 3px 0 0;
-  transition: height 0.35s ease, background 0.25s ease;
-}
-
-.core-pct {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
+  display: none;
 }
 
 /* Progress Bars */
 .bar-block {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .bar-label-row {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
 .progress-track {
   width: 100%;
-  height: 10px;
+  height: 13px;
   background: rgba(148, 163, 184, 0.11);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .progress-lg {
-  height: 13px;
+  height: 16px;
 }
 
 .progress-fill {
@@ -572,7 +534,7 @@ body.widget-mode .card {
 /* RAM */
 .big-pct {
   font-family: var(--font-mono);
-  font-size: 27px;
+  font-size: 34px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--sky);
@@ -581,7 +543,7 @@ body.widget-mode .card {
 .ram-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
 }
 
@@ -602,7 +564,7 @@ body.widget-mode .card {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 8px 11px;
+  padding: 10px 12px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -610,9 +572,9 @@ body.widget-mode .card {
 
 .net-dir {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
 .net-dir.down {
@@ -625,7 +587,7 @@ body.widget-mode .card {
 
 .net-speed {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -634,16 +596,16 @@ body.widget-mode .card {
 /* Storage */
 .disk-io-pills {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .io-pill {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 14.5px;
   color: var(--text-secondary);
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 8px;
   font-variant-numeric: tabular-nums;
 }
@@ -656,17 +618,17 @@ body.widget-mode .card {
 .drives-list {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 9px;
 }
 
 .drive-row {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 8px 11px;
+  padding: 9px 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .drive-top {
@@ -674,7 +636,7 @@ body.widget-mode .card {
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 13.5px;
+  font-size: 16px;
 }
 
 .drive-mount {
@@ -696,7 +658,7 @@ body.widget-mode .card {
 .procs-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   justify-content: space-between;
   flex: 1;
 }
@@ -706,9 +668,9 @@ body.widget-mode .card {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 7px 11px;
+  padding: 8px 12px;
   display: grid;
-  grid-template-columns: 1fr 78px 94px;
+  grid-template-columns: 1fr 86px 104px;
   align-items: center;
   gap: 8px;
   overflow: hidden;
@@ -726,7 +688,7 @@ body.widget-mode .card {
 
 .proc-name {
   position: relative;
-  font-size: 14.5px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -738,7 +700,7 @@ body.widget-mode .card {
 .proc-ram {
   position: relative;
   font-family: var(--font-mono);
-  font-size: 13.5px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
