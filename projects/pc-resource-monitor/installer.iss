@@ -1,7 +1,7 @@
 [Setup]
 AppId={{8D6B2A1E-5C3F-4B9E-9A12-515192000001}
 AppName=PC Resource Monitor
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=JRAltd
 DefaultDirName={localappdata}\Programs\PC Resource Monitor
 DefaultGroupName=PC Resource Monitor

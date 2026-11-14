@@ -49,9 +49,19 @@ body.widget-mode .hud-panel {
   box-shadow: none !important;
 }
 
+body.widget-mode .hud-header {
+  background: linear-gradient(155deg, rgba(13, 20, 30, 0.82) 0%, rgba(8, 12, 19, 0.88) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
 body.widget-mode .card {
-  background: linear-gradient(155deg, rgba(14, 21, 31, 0.84) 0%, rgba(8, 12, 19, 0.88) 100%);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(155deg, rgba(13, 20, 30, 0.82) 0%, rgba(8, 12, 19, 0.88) 100%);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .hud-viewport {
@@ -73,7 +83,7 @@ body.widget-mode .card {
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 11px;
   overflow: hidden;
   transform-origin: center center;
 }
@@ -91,7 +101,7 @@ body.widget-mode .card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px 8px;
+  padding: 8px 6px 10px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -99,7 +109,7 @@ body.widget-mode .card {
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -110,8 +120,8 @@ body.widget-mode .card {
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--amber);
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
@@ -130,9 +140,9 @@ body.widget-mode .card {
 
 .hostname {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -141,11 +151,11 @@ body.widget-mode .card {
 
 .mode-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
   background: rgba(34, 211, 238, 0.12);
   color: var(--cyan);
   border: 1px solid rgba(34, 211, 238, 0.25);
@@ -158,10 +168,10 @@ body.widget-mode .card {
 }
 
 .sys-meta {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 12.5px;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .header-right {
@@ -176,8 +186,8 @@ body.widget-mode .card {
 
 .clock-time {
   font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.03em;
   color: var(--text-primary);
@@ -186,17 +196,17 @@ body.widget-mode .card {
 
 .clock-date {
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-top: 2px;
 }
 
 .icon-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   border: 1px solid var(--border-hairline);
   background: rgba(15, 23, 34, 0.8);
   color: var(--text-secondary);
@@ -286,13 +296,13 @@ body.widget-mode .card {
 /* Cards */
 .card {
   background: var(--bg-card);
-  border: 1px solid var(--border-hairline);
-  border-radius: 12px;
-  padding: 13px 15px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  padding: 12px 15px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .card-head {
@@ -309,15 +319,15 @@ body.widget-mode .card {
 .card-kicker {
   display: block;
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 
 .card-name {
-  font-size: 14px;
+  font-size: 16.5px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -327,21 +337,21 @@ body.widget-mode .card {
 
 .chip {
   font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--cyan);
-  background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  padding: 3px 8px;
-  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  padding: 4px 9px;
+  border-radius: 8px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .chip-emerald {
   color: var(--emerald);
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.26);
 }
 
 /* Arc Gauge + Stat Stack */
@@ -355,7 +365,7 @@ body.widget-mode .card {
 .arc-gauge {
   position: relative;
   width: 152px;
-  height: 126px;
+  height: 124px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,7 +373,7 @@ body.widget-mode .card {
 
 .gauge-svg {
   width: 148px;
-  height: 126px;
+  height: 124px;
   overflow: visible;
 }
 
@@ -393,7 +403,7 @@ body.widget-mode .card {
 
 .gauge-val {
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: 38px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -401,30 +411,31 @@ body.widget-mode .card {
 }
 
 .gauge-val .unit {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-left: 1px;
 }
 
 .gauge-sub {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
   letter-spacing: 0.14em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
 .metric-stack {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
 .stat-box {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 7px 11px;
   display: flex;
   align-items: center;
@@ -433,15 +444,16 @@ body.widget-mode .card {
 
 .stat-label {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
 }
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15.5px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
@@ -450,13 +462,13 @@ body.widget-mode .card {
 .sparkline-wrap {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px 6px 2px;
-  height: 54px;
+  height: 46px;
 }
 
 .sparkline-sm {
-  height: 40px;
+  height: 36px;
 }
 
 .sparkline-svg {
@@ -467,7 +479,7 @@ body.widget-mode .card {
 
 .spark-line {
   fill: none;
-  stroke-width: 1.8;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -476,14 +488,14 @@ body.widget-mode .card {
 .cores-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .core-cell {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 5px 4px 4px;
+  border-radius: 7px;
+  padding: 4px 3px 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -492,7 +504,7 @@ body.widget-mode .card {
 
 .core-bar-track {
   width: 100%;
-  height: 28px;
+  height: 22px;
   background: rgba(148, 163, 184, 0.09);
   border-radius: 3px;
   display: flex;
@@ -509,36 +521,38 @@ body.widget-mode .card {
 
 .core-pct {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 /* Progress Bars */
 .bar-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .bar-label-row {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
 .progress-track {
   width: 100%;
-  height: 9px;
+  height: 10px;
   background: rgba(148, 163, 184, 0.11);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .progress-lg {
-  height: 12px;
+  height: 13px;
 }
 
 .progress-fill {
@@ -558,7 +572,7 @@ body.widget-mode .card {
 /* RAM */
 .big-pct {
   font-family: var(--font-mono);
-  font-size: 22px;
+  font-size: 27px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--sky);
@@ -567,7 +581,7 @@ body.widget-mode .card {
 .ram-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -587,7 +601,7 @@ body.widget-mode .card {
 .net-box {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 11px;
   display: flex;
   align-items: baseline;
@@ -596,9 +610,9 @@ body.widget-mode .card {
 
 .net-dir {
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .net-dir.down {
@@ -611,7 +625,7 @@ body.widget-mode .card {
 
 .net-speed {
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -625,30 +639,30 @@ body.widget-mode .card {
 
 .io-pill {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 3px 9px;
+  border-radius: 8px;
   font-variant-numeric: tabular-nums;
 }
 
 .io-pill strong {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .drives-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .drive-row {
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 11px;
   display: flex;
   flex-direction: column;
@@ -660,7 +674,7 @@ body.widget-mode .card {
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13.5px;
 }
 
 .drive-mount {
@@ -691,10 +705,10 @@ body.widget-mode .card {
   position: relative;
   background: var(--bg-inset);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 7px 11px;
   display: grid;
-  grid-template-columns: 1fr 68px 82px;
+  grid-template-columns: 1fr 78px 94px;
   align-items: center;
   gap: 8px;
   overflow: hidden;
@@ -712,8 +726,8 @@ body.widget-mode .card {
 
 .proc-name {
   position: relative;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -724,16 +738,17 @@ body.widget-mode .card {
 .proc-ram {
   position: relative;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13.5px;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
 .proc-cpu {
   color: var(--cyan);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .proc-ram {
   color: var(--text-secondary);
+  font-weight: 600;
 }
