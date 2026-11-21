@@ -1,17 +1,17 @@
 #ifndef AppVersion
-  #define AppVersion "1.0.3"
+  #define AppVersion "1.1.0"
 #endif
 
 [Setup]
 AppId={{8D6B2A1E-5C3F-4B9E-9A12-515192000001}
-AppName=PC Resource Monitor
+AppName=RigTach Metrix
 AppVersion={#AppVersion}
 AppPublisher=JRAltd
-DefaultDirName={localappdata}\Programs\PC Resource Monitor
-DefaultGroupName=PC Resource Monitor
-UninstallDisplayIcon={app}\PCResourceMonitor.exe
+DefaultDirName={localappdata}\Programs\RigTach Metrix
+DefaultGroupName=RigTach Metrix
+UninstallDisplayIcon={app}\RigTachMetrix.exe
 OutputDir=dist
-OutputBaseFilename=PCResourceMonitor-Setup
+OutputBaseFilename=RigTachMetrix-Setup
 SetupIconFile=hud_icon.ico
 Compression=lzma2
 SolidCompression=yes
@@ -25,19 +25,19 @@ Name: "desktopicon"; Description: "Create a &Desktop shortcut"; GroupDescription
 Name: "startupicon"; Description: "Launch automatically when Windows starts"; GroupDescription: "Startup:"; Flags: unchecked
 
 #ifndef BuildDist
-  #define BuildDist "dist\PCResourceMonitor"
+  #define BuildDist "dist\RigTachMetrix"
 #endif
 
 [Files]
 Source: "{#BuildDist}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\PC Resource Monitor"; Filename: "{app}\PCResourceMonitor.exe"
-Name: "{group}\Uninstall PC Resource Monitor"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\PC Resource Monitor"; Filename: "{app}\PCResourceMonitor.exe"; Tasks: desktopicon
+Name: "{group}\RigTach Metrix"; Filename: "{app}\RigTachMetrix.exe"
+Name: "{group}\Uninstall RigTach Metrix"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\RigTach Metrix"; Filename: "{app}\RigTachMetrix.exe"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "PCResourceMonitor"; ValueData: """{app}\PCResourceMonitor.exe"""; Flags: uninsdeletevalue; Tasks: startupicon
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RigTachMetrix"; ValueData: """{app}\RigTachMetrix.exe"""; Flags: uninsdeletevalue; Tasks: startupicon
 
 [Run]
-Filename: "{app}\PCResourceMonitor.exe"; Description: "Launch PC Resource Monitor"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\RigTachMetrix.exe"; Description: "Launch RigTach Metrix"; Flags: nowait postinstall skipifsilent

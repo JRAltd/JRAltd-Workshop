@@ -16,14 +16,14 @@ echo [1/3] Installing build dependencies (PyInstaller)...
 ".venv\Scripts\python.exe" launcher.py --make-icon
 
 set "BUILD_ID=%RANDOM%-%RANDOM%"
-set "WORK_DIR=%TEMP%\pcrm-build-%BUILD_ID%"
-set "DIST_DIR=%TEMP%\pcrm-dist-%BUILD_ID%"
+set "WORK_DIR=%TEMP%\rtm-build-%BUILD_ID%"
+set "DIST_DIR=%TEMP%\rtm-dist-%BUILD_ID%"
 
-echo [2/3] Building standalone PCResourceMonitor.exe...
+echo [2/3] Building standalone RigTachMetrix.exe...
 ".venv\Scripts\pyinstaller.exe" --noconfirm --onedir --windowed ^
     --workpath "%WORK_DIR%" ^
     --distpath "%DIST_DIR%" ^
-    --name PCResourceMonitor ^
+    --name RigTachMetrix ^
     --icon hud_icon.ico ^
     --add-data "frontend;frontend" ^
     --add-data "VERSION;." ^
@@ -59,15 +59,15 @@ if "%ISCC%"=="" (
 )
 
 if not "%ISCC%"=="" (
-    "%ISCC%" "/DBuildDist=%DIST_DIR%\PCResourceMonitor" installer.iss
+    "%ISCC%" "/DBuildDist=%DIST_DIR%\RigTachMetrix" installer.iss
     echo.
     echo ============================================================
-    echo Installer ready: dist\PCResourceMonitor-Setup.exe
+    echo Installer ready: dist\RigTachMetrix-Setup.exe
     echo ============================================================
 ) else (
     echo.
-    echo Standalone app built at: %DIST_DIR%\PCResourceMonitor\PCResourceMonitor.exe
-    echo To build Setup.exe, install Inno Setup 6 and run: iscc "/DBuildDist=%DIST_DIR%\PCResourceMonitor" installer.iss
+    echo Standalone app built at: %DIST_DIR%\RigTachMetrix\RigTachMetrix.exe
+    echo To build Setup.exe, install Inno Setup 6 and run: iscc "/DBuildDist=%DIST_DIR%\RigTachMetrix" installer.iss
 )
 
 pause

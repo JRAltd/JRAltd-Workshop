@@ -250,7 +250,7 @@ def get_app_version() -> str:
     ver_file = base / "VERSION"
     if ver_file.exists():
         return ver_file.read_text(encoding="utf-8").strip()
-    return "1.0.2"
+    return "1.1.0"
 
 
 def _parse_version(ver: str) -> tuple[int, ...]:
@@ -268,7 +268,7 @@ def _check_and_install_update(on_before_exit=None, icon=None, manual: bool = Fal
     current = get_app_version()
     api_url = "https://api.github.com/repos/JRAltd/JRAltd-Workshop/releases?per_page=20"
     try:
-        req = urllib.request.Request(api_url, headers={"User-Agent": "PCResourceMonitor"})
+        req = urllib.request.Request(api_url, headers={"User-Agent": "RigTachMetrix"})
         with urllib.request.urlopen(req, timeout=8) as resp:
             releases = json.loads(resp.read().decode("utf-8"))
     except Exception as exc:
@@ -287,30 +287,33 @@ def _check_and_install_update(on_before_exit=None, icon=None, manual: bool = Fal
         ver_str = tag[len(prefix):]
         ver_tuple = _parse_version(ver_str)
         if ver_tuple > best_ver:
-            for asset in rel.get("assets", []):
-                if asset.get("name") == "PCResourceMonitor-Setup.exe":
-                    best_ver = ver_tuple
-                    best_asset_url = asset.get("browser_download_url")
-                    best_tag = tag
-                    break
+            assets = rel.get("assets", [])
+            chosen = next(
+                (a for a in assets if a.get("name") == "RigTachMetrix-Setup.exe"),
+                next((a for a in assets if a.get("name") == "PCResourceMonitor-Setup.exe"), None),
+            )
+            if chosen:
+                best_ver = ver_tuple
+                best_asset_url = chosen.get("browser_download_url")
+                best_tag = tag
 
     if not best_asset_url:
         if manual and icon:
             try:
-                icon.notify(f"You're on the latest version (v{current}).", "PC Resource Monitor")
+                icon.notify(f"You're on the latest version (v{current}).", "RigTach Metrix")
             except Exception:
                 pass
         return
 
     if icon:
         try:
-            icon.notify(f"Downloading update {best_tag}...", "PC Resource Monitor")
+            icon.notify(f"Downloading update {best_tag}...", "RigTach Metrix")
         except Exception:
             pass
 
-    setup_path = Path(tempfile.gettempdir()) / "PCResourceMonitor-Setup.exe"
+    setup_path = Path(tempfile.gettempdir()) / "RigTachMetrix-Setup.exe"
     try:
-        req = urllib.request.Request(best_asset_url, headers={"User-Agent": "PCResourceMonitor"})
+        req = urllib.request.Request(best_asset_url, headers={"User-Agent": "RigTachMetrix"})
         with urllib.request.urlopen(req, timeout=60) as resp, open(setup_path, "wb") as out:
             shutil.copyfileobj(resp, out)
     except Exception as exc:
@@ -516,7 +519,7 @@ def _launch_widget_webview(
 
 def main() -> None:
     _setup_windowed_logging()
-    parser = argparse.ArgumentParser(description="Launch the 515x1920 PC Resource Monitor")
+    parser = argparse.ArgumentParser(description="Launch the 515x1920 RigTach Metrix HUD")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8765, help="Bind port (default: 8765)")
     parser.add_argument("--demo", action="store_true", help="Start in simulated demo mode")
@@ -564,7 +567,7 @@ def main() -> None:
         print("Failed to start telemetry server.")
         sys.exit(1)
 
-    print(f"PC Resource Monitor running at {url}")
+    print(f"RigTach Metrix running at {url}")
 
     monitors = list_windows_monitors()
     target = next(
@@ -582,7 +585,7 @@ def main() -> None:
     if not args.no_browser:
         browser = find_browser()
         if browser:
-            profile_dir = Path(tempfile.gettempdir()) / "pc-resource-monitor-profile"
+            profile_dir = Path(tempfile.gettempdir()) / "rigtach-metrix-profile"
             profile_dir.mkdir(parents=True, exist_ok=True)
 
             cmd = [
@@ -606,7 +609,7 @@ def main() -> None:
 
             browser_proc = subprocess.Popen(cmd)
             if target:
-                hwnd = _snap_window_to_monitor("PC Resource Monitor", target)
+                hwnd = _snap_window_to_monitor("RigTach Metrix", target)
                 if hwnd:
                     print("Snapped HUD window to portrait monitor.")
                 else:
@@ -628,7 +631,7 @@ def main() -> None:
             while True:
                 time.sleep(1)
     except KeyboardInterrupt:
-        print("\nShutting down PC Resource Monitor...")
+        print("\nShutting down RigTach Metrix...")
 
 
 if __name__ == "__main__":

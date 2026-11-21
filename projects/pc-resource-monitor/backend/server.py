@@ -13,11 +13,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.telemetry import DemoTelemetryGenerator, SystemTelemetryCollector
+from backend.weather import get_weather
 
 BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-app = FastAPI(title="PC Resource Monitor (515x1920)", version="1.0.0")
+app = FastAPI(title="RigTach Metrix (515x1920)", version="1.1.0")
 
 _live_collector = SystemTelemetryCollector()
 _demo_collector = DemoTelemetryGenerator()
@@ -36,6 +37,15 @@ async def get_telemetry(
 ) -> dict[str, Any]:
     use_demo = _default_demo if demo is None else demo
     return await asyncio.to_thread(_get_payload, use_demo, sort)
+
+
+@app.get("/api/weather")
+async def api_weather(
+    location: str = Query(default="Des Moines, IA"),
+    demo: bool | None = Query(default=None),
+) -> dict[str, Any]:
+    use_demo = _default_demo if demo is None else demo
+    return await asyncio.to_thread(get_weather, location, use_demo)
 
 
 @app.websocket("/ws/telemetry")

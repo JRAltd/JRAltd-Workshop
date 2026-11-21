@@ -2,18 +2,43 @@
   const MAX_HISTORY = 60;
   const ARC_LENGTH = 246;
 
+  const PRESETS = {
+    cyan: { primary: "#22d3ee", secondary: "#10b981", bg: "#0d141e" },
+    emerald: { primary: "#10b981", secondary: "#34d399", bg: "#0a1714" },
+    amber: { primary: "#f59e0b", secondary: "#fb923c", bg: "#18130a" },
+    crimson: { primary: "#f43f5e", secondary: "#fb7185", bg: "#1a0c12" },
+    cobalt: { primary: "#3b82f6", secondary: "#38bdf8", bg: "#0b1322" },
+    arctic: { primary: "#e2e8f0", secondary: "#38bdf8", bg: "#101620" },
+  };
+
+  const WEATHER_ICONS = {
+    sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>`,
+    moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>`,
+    "partly-cloudy": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v1.5M5.6 5.6l1.1 1.1M3 12h1.5M16.9 6.7l1.1-1.1"/><path d="M8.5 12a3.5 3.5 0 0 1 6.7-1.4"/><path d="M9 19h8.5a3.5 3.5 0 0 0 .4-7 4.8 4.8 0 0 0-9.2-1.1A3.6 3.6 0 0 0 9 19z"/></svg>`,
+    cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19h11a4 4 0 0 0 .6-7.9A5.5 5.5 0 0 0 7.4 9.5 4.2 4.2 0 0 0 6.5 19z"/></svg>`,
+    fog: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14h12a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8.5 6 3.5 3.5 0 0 0 6 14z"/><path d="M4 17.5h16M6 21h12"/></svg>`,
+    rain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15h12a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8.5 7 3.5 3.5 0 0 0 6 15z"/><path d="M8 18.5l-1 2.5M12.5 18.5l-1 2.5M17 18.5l-1 2.5"/></svg>`,
+    snow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5h12a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8.5 6.5 3.5 3.5 0 0 0 6 14.5z"/><circle cx="8.5" cy="19" r="0.9" fill="currentColor"/><circle cx="12.5" cy="20" r="0.9" fill="currentColor"/><circle cx="16.5" cy="19" r="0.9" fill="currentColor"/></svg>`,
+    storm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5h12a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8.5 6.5 3.5 3.5 0 0 0 6 14.5z"/><path d="M13 14.5l-2 4h3l-2 4"/></svg>`,
+  };
+
   const params = new URLSearchParams(window.location.search);
   if (params.get("widget") === "1") {
     document.body.classList.add("widget-mode");
   }
 
   const state = {
-    unit: localStorage.getItem("hud_unit") || "C",
-    interval: parseFloat(localStorage.getItem("hud_interval") || "1"),
-    sort: localStorage.getItem("hud_sort") || "cpu",
-    demo: params.get("demo") === "1" ||
-          localStorage.getItem("hud_demo") === "1",
+    unit: localStorage.getItem("rtm_unit") || "F",
+    clockFormat: localStorage.getItem("rtm_clock") || "12",
+    interval: parseFloat(localStorage.getItem("rtm_interval") || "1"),
+    location: localStorage.getItem("rtm_location") || "Des Moines, IA",
+    preset: localStorage.getItem("rtm_preset") || "cyan",
+    primaryColor: localStorage.getItem("rtm_primary") || PRESETS.cyan.primary,
+    secondaryColor: localStorage.getItem("rtm_secondary") || PRESETS.cyan.secondary,
+    bgColor: localStorage.getItem("rtm_bg") || PRESETS.cyan.bg,
+    demo: params.get("demo") === "1" || localStorage.getItem("rtm_demo") === "1",
     ws: null,
+    lastWeather: null,
     history: {
       cpu: [],
       gpu: [],
@@ -25,7 +50,51 @@
 
   const $ = (id) => document.getElementById(id);
 
-  // Fit 515x1920 panel cleanly when previewing on a larger/shorter desktop monitor
+  // Hex -> "r, g, b"
+  function hexToRgb(hex) {
+    const clean = hex.replace("#", "").trim();
+    const num = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+    if (Number.isNaN(num)) return "34, 211, 238";
+    return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
+  }
+
+  function applyTheme() {
+    const root = document.documentElement;
+    root.style.setProperty("--accent", state.primaryColor);
+    root.style.setProperty("--accent-rgb", hexToRgb(state.primaryColor));
+    root.style.setProperty("--accent-2", state.secondaryColor);
+    root.style.setProperty("--accent-2-rgb", hexToRgb(state.secondaryColor));
+    root.style.setProperty("--card-rgb", hexToRgb(state.bgColor));
+
+    // Update SVG gradients & sparkline strokes
+    ["cpuGradStop1", "cpuGradStop2", "cpuSparkStop1", "cpuSparkStop2", "ramSparkStop1", "ramSparkStop2", "netSparkStop1", "netSparkStop2"].forEach((id) => {
+      const el = $(id);
+      if (el) el.setAttribute("stop-color", state.primaryColor);
+    });
+    ["gpuGradStop1", "gpuGradStop2", "gpuSparkStop1", "gpuSparkStop2"].forEach((id) => {
+      const el = $(id);
+      if (el) el.setAttribute("stop-color", state.secondaryColor);
+    });
+
+    ["cpuSparkLine", "ramSparkLine", "netDownLine"].forEach((id) => {
+      const el = $(id);
+      if (el) el.setAttribute("stroke", state.primaryColor);
+    });
+    ["gpuSparkLine", "netUpLine"].forEach((id) => {
+      const el = $(id);
+      if (el) el.setAttribute("stroke", state.secondaryColor);
+    });
+
+    $("primaryColorPicker").value = state.primaryColor;
+    $("secondaryColorPicker").value = state.secondaryColor;
+    $("bgColorPicker").value = state.bgColor;
+
+    Array.from($("themePresets").querySelectorAll(".swatch")).forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.preset === state.preset);
+    });
+  }
+
+  // Fit 515x1920 panel cleanly to any viewport
   function fitPanel() {
     const panel = $("hudPanel");
     const vw = window.innerWidth;
@@ -41,21 +110,28 @@
   window.addEventListener("resize", fitPanel);
   fitPanel();
 
-  // Clock
+  // Clock Widget
   function updateClock() {
     const now = new Date();
-    $("clockTime").textContent = now.toLocaleTimeString([], {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    $("clockDate").textContent = now.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    });
+    const use12 = state.clockFormat === "12";
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    if (use12) {
+      hours = hours % 12 || 12;
+    }
+    const hh = use12 ? String(hours) : String(hours).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+
+    $("clockHM").textContent = `${hh}:${mm}`;
+    $("clockSec").textContent = ss;
+    $("clockAmPm").textContent = use12 ? ampm : "24H";
+
+    const day = now.toLocaleDateString([], { weekday: "long" }).toUpperCase();
+    const datePart = now
+      .toLocaleDateString([], { month: "short", day: "2-digit", year: "numeric" })
+      .toUpperCase();
+    $("clockDateLine").textContent = `${day} • ${datePart}`;
   }
   updateClock();
   setInterval(updateClock, 1000);
@@ -68,20 +144,29 @@
     return `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`;
   }
 
-  function formatTemp(tempC) {
+  function formatTemp(tempC, showUnit = true) {
     if (tempC === null || tempC === undefined) return "N/A";
     if (state.unit === "F") {
-      return `${((tempC * 9) / 5 + 32).toFixed(0)}°F`;
+      const f = (tempC * 9) / 5 + 32;
+      return `${Math.round(f)}°${showUnit ? "F" : ""}`;
     }
-    return `${tempC.toFixed(0)}°C`;
+    return `${Math.round(tempC)}°${showUnit ? "C" : ""}`;
+  }
+
+  function formatWind(kph) {
+    if (kph === null || kph === undefined) return "--";
+    if (state.unit === "F") {
+      return `${Math.round(kph * 0.621371)} mph`;
+    }
+    return `${Math.round(kph)} km/h`;
   }
 
   function formatRate(bytesPerSec) {
     if (bytesPerSec >= 1024 * 1024 * 1024) {
-      return `${(bytesPerSec / (1024 ** 3)).toFixed(2)} GB/s`;
+      return `${(bytesPerSec / 1024 ** 3).toFixed(2)} GB/s`;
     }
     if (bytesPerSec >= 1024 * 1024) {
-      return `${(bytesPerSec / (1024 ** 2)).toFixed(1)} MB/s`;
+      return `${(bytesPerSec / 1024 ** 2).toFixed(1)} MB/s`;
     }
     if (bytesPerSec >= 1024) {
       return `${(bytesPerSec / 1024).toFixed(0)} KB/s`;
@@ -89,9 +174,9 @@
     return `${bytesPerSec.toFixed(0)} B/s`;
   }
 
-  function loadColor(pct, defaultColor = "#22d3ee") {
+  function loadColor(pct, defaultColor) {
     if (pct >= 90) return "#ef4444";
-    if (pct >= 72) return "#f59e0b";
+    if (pct >= 75) return "#f59e0b";
     return defaultColor;
   }
 
@@ -138,82 +223,59 @@
     }
   }
 
-  function renderCores(perCore) {
-    const grid = $("coresGrid");
-    const count = perCore.length;
-    const cols = count <= 8 ? count : count <= 16 ? 8 : count <= 24 ? 12 : 16;
-    grid.style.gridTemplateColumns = `repeat(${Math.max(cols, 4)}, 1fr)`;
-
-    if (grid.children.length !== count) {
-      grid.innerHTML = perCore
-        .map(
-          (_, i) => `
-          <div class="core-cell" title="Thread ${i}">
-            <div class="core-bar-track"><div class="core-bar-fill" style="height:0%"></div></div>
-            <span class="core-pct">0%</span>
-          </div>`
-        )
-        .join("");
+  // Weather Widget
+  function renderWeather(w) {
+    if (!w) return;
+    if (!w.ok) {
+      $("weatherLocLabel").textContent = w.location || state.location;
+      $("weatherCond").textContent = "Location unavailable";
+      $("weatherTemp").textContent = "--°";
+      $("weatherHiLo").textContent = "H --° / L --°";
+      $("weatherFeels").textContent = "--°";
+      $("weatherHum").textContent = "--%";
+      $("weatherWind").textContent = "--";
+      $("weatherIcon").innerHTML = WEATHER_ICONS.cloud;
+      return;
     }
 
-    Array.from(grid.children).forEach((cell, idx) => {
-      const val = perCore[idx] ?? 0;
-      const fill = cell.querySelector(".core-bar-fill");
-      const label = cell.querySelector(".core-pct");
-      fill.style.height = `${Math.max(4, Math.min(100, val))}%`;
-      fill.style.background = loadColor(val, "#22d3ee");
-      label.textContent = `${Math.round(val)}`;
-    });
+    $("weatherLocLabel").textContent = w.location;
+    $("weatherTemp").textContent = formatTemp(w.temp_c, true);
+    $("weatherCond").textContent = w.condition;
+    $("weatherHiLo").textContent = `H ${formatTemp(w.high_c, false)} / L ${formatTemp(w.low_c, false)}`;
+    $("weatherFeels").textContent = formatTemp(w.feels_like_c, false);
+    $("weatherHum").textContent = `${w.humidity}%`;
+    $("weatherWind").textContent = formatWind(w.wind_kph);
+    $("weatherIcon").innerHTML = WEATHER_ICONS[w.icon] || WEATHER_ICONS.sun;
   }
 
-  function renderDrives(drives) {
-    const list = $("drivesList");
-    list.innerHTML = drives
-      .map((d) => {
-        const color = loadColor(d.percent, "#38bdf8");
-        return `
-        <div class="drive-row">
-          <div class="drive-top">
-            <span class="drive-mount">${d.mount} <span style="color:var(--text-muted);font-weight:400">(${d.fs})</span></span>
-            <span class="drive-cap">${d.used_gb.toFixed(0)} / ${d.total_gb.toFixed(0)} GB • ${d.percent.toFixed(0)}%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" style="width:${d.percent}%;background:${color}"></div>
-          </div>
-        </div>`;
-      })
-      .join("");
-  }
-
-  function renderProcesses(procs) {
-    const list = $("procsList");
-    const maxVal = Math.max(
-      ...procs.map((p) => (state.sort === "ram" ? p.ram_mb : p.cpu_percent)),
-      1
-    );
-    list.innerHTML = procs
-      .map((p) => {
-        const ratio =
-          state.sort === "ram"
-            ? (p.ram_mb / maxVal) * 100
-            : Math.min(100, (p.cpu_percent / Math.max(maxVal, 25)) * 100);
-        const ramLabel =
-          p.ram_mb >= 1024 ? `${(p.ram_mb / 1024).toFixed(1)} GB` : `${p.ram_mb.toFixed(0)} MB`;
-        return `
-        <div class="proc-row">
-          <div class="proc-bar" style="width:${ratio.toFixed(1)}%"></div>
-          <span class="proc-name" title="PID ${p.pid}">${p.name}</span>
-          <span class="proc-cpu">${p.cpu_percent.toFixed(1)}%</span>
-          <span class="proc-ram">${ramLabel}</span>
-        </div>`;
-      })
-      .join("");
+  async function fetchWeather(showStatus = false) {
+    const statusEl = $("weatherLocStatus");
+    try {
+      const q = encodeURIComponent(state.location);
+      const res = await fetch(`/api/weather?location=${q}&demo=${state.demo}`);
+      const data = await res.json();
+      state.lastWeather = data;
+      renderWeather(data);
+      if (showStatus) {
+        if (data.ok) {
+          statusEl.textContent = `Updated: ${data.location}`;
+          statusEl.classList.remove("error");
+        } else {
+          statusEl.textContent = data.error || "Location not found";
+          statusEl.classList.add("error");
+        }
+      }
+    } catch (err) {
+      if (showStatus) {
+        statusEl.textContent = "Could not reach weather service";
+        statusEl.classList.add("error");
+      }
+    }
   }
 
   function renderTelemetry(data) {
     // Header
-    $("hostname").textContent = data.system.hostname.toUpperCase();
-    $("sysMeta").textContent = `${data.system.os} • Up ${formatUptime(data.system.uptime_sec)}`;
+    $("sysMeta").textContent = `${data.system.hostname.toUpperCase()} • Up ${formatUptime(data.system.uptime_sec)}`;
     const badge = $("modeBadge");
     badge.textContent = data.mode === "demo" ? "DEMO" : "LIVE";
     badge.classList.toggle("demo", data.mode === "demo");
@@ -224,24 +286,23 @@
     $("cpuTopology").textContent = `${cpu.cores}C / ${cpu.threads}T`;
     $("cpuPct").innerHTML = `${Math.round(cpu.usage_percent)}<span class="unit">%</span>`;
     $("cpuFreq").textContent = cpu.freq_ghz ? `${cpu.freq_ghz.toFixed(2)} GHz` : "-- GHz";
-    $("cpuTemp").textContent = formatTemp(cpu.temp_c);
+    $("cpuTemp").textContent = formatTemp(cpu.temp_c, true);
     setArc("cpuArc", cpu.usage_percent, "url(#cpuGrad)");
 
     pushHistory("cpu", cpu.usage_percent);
     const cpuPeak = Math.max(...state.history.cpu, 0);
     $("cpuPeak").textContent = `${Math.round(cpuPeak)}%`;
     renderSparkline("cpuSparkLine", "cpuSparkArea", state.history.cpu, 440, 52, 100);
-    renderCores(cpu.per_core || []);
 
     // GPU
     const gpu = data.gpu;
     $("gpuName").textContent = gpu.name;
     $("gpuFan").textContent = gpu.fan_percent !== null ? `FAN ${Math.round(gpu.fan_percent)}%` : "FAN --";
     $("gpuPct").innerHTML = `${Math.round(gpu.usage_percent)}<span class="unit">%</span>`;
-    $("gpuTemp").textContent = formatTemp(gpu.temp_c);
+    $("gpuTemp").textContent = formatTemp(gpu.temp_c, true);
     $("gpuPower").textContent =
       gpu.power_w !== null
-        ? `${Math.round(gpu.power_w)}${gpu.power_limit_w ? ` / ${Math.round(gpu.power_limit_w)}` : ""} W`
+        ? `${Math.round(gpu.power_w)}${gpu.power_limit_w ? `/${Math.round(gpu.power_limit_w)}` : ""}W`
         : "-- W";
     $("gpuClock").textContent = gpu.clock_mhz ? `${Math.round(gpu.clock_mhz)} MHz` : "-- MHz";
     setArc("gpuArc", gpu.usage_percent, "url(#gpuGrad)");
@@ -257,7 +318,7 @@
     $("ramSummary").textContent = `${mem.used_gb.toFixed(1)} / ${mem.total_gb.toFixed(1)} GB`;
     $("ramPct").textContent = `${Math.round(mem.percent)}%`;
     $("ramBar").style.width = `${mem.percent}%`;
-    $("ramBar").style.background = loadColor(mem.percent, "linear-gradient(90deg, #06b6d4, #38bdf8)");
+    $("ramBar").style.background = loadColor(mem.percent, state.primaryColor);
     $("ramAvail").textContent = `${mem.available_gb.toFixed(1)} GB`;
     $("ramSwap").textContent = `${mem.swap_used_gb.toFixed(1)} / ${mem.swap_total_gb.toFixed(1)} GB`;
 
@@ -276,20 +337,12 @@
     const netMax = Math.max(...state.history.netDown, ...state.history.netUp, 1024 * 100);
     renderSparkline("netDownLine", "netDownArea", state.history.netDown, 440, 48, netMax);
     renderSparkline("netUpLine", null, state.history.netUp, 440, 48, netMax);
-
-    // Storage
-    $("diskRead").textContent = formatRate(data.storage.read_bps);
-    $("diskWrite").textContent = formatRate(data.storage.write_bps);
-    renderDrives(data.storage.drives || []);
-
-    // Processes
-    renderProcesses(data.processes || []);
   }
 
   // WebSocket Lifecycle
   function connectWS() {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/ws/telemetry?demo=${state.demo}&interval=${state.interval}&sort=${state.sort}`;
+    const url = `${proto}//${window.location.host}/ws/telemetry?demo=${state.demo}&interval=${state.interval}`;
     const dot = $("connDot");
     dot.className = "status-dot";
 
@@ -325,7 +378,6 @@
         JSON.stringify({
           demo: state.demo,
           interval: state.interval,
-          sort: state.sort,
         })
       );
     }
@@ -347,50 +399,112 @@
 
   document.addEventListener("click", (e) => {
     const drawer = $("settingsDrawer");
-    if (!drawer.hidden && !drawer.contains(e.target) && e.target !== $("settingsBtn")) {
+    if (!drawer.hidden && !drawer.contains(e.target) && !e.target.closest("#settingsBtn")) {
       drawer.hidden = true;
     }
   });
 
-  $("modeToggle").addEventListener("click", (e) => {
+  // Weather location save
+  function saveLocation() {
+    const val = $("weatherLocInput").value.trim();
+    if (!val) return;
+    state.location = val;
+    localStorage.setItem("rtm_location", val);
+    fetchWeather(true);
+  }
+
+  $("weatherLocSave").addEventListener("click", saveLocation);
+  $("weatherLocInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") saveLocation();
+  });
+
+  // Theme Presets & Custom Color Pickers
+  $("themePresets").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-preset]");
+    if (!btn) return;
+    const p = PRESETS[btn.dataset.preset];
+    if (!p) return;
+    state.preset = btn.dataset.preset;
+    state.primaryColor = p.primary;
+    state.secondaryColor = p.secondary;
+    state.bgColor = p.bg;
+    localStorage.setItem("rtm_preset", state.preset);
+    localStorage.setItem("rtm_primary", state.primaryColor);
+    localStorage.setItem("rtm_secondary", state.secondaryColor);
+    localStorage.setItem("rtm_bg", state.bgColor);
+    applyTheme();
+  });
+
+  $("primaryColorPicker").addEventListener("input", (e) => {
+    state.preset = "custom";
+    state.primaryColor = e.target.value;
+    localStorage.setItem("rtm_preset", "custom");
+    localStorage.setItem("rtm_primary", state.primaryColor);
+    applyTheme();
+  });
+
+  $("secondaryColorPicker").addEventListener("input", (e) => {
+    state.preset = "custom";
+    state.secondaryColor = e.target.value;
+    localStorage.setItem("rtm_preset", "custom");
+    localStorage.setItem("rtm_secondary", state.secondaryColor);
+    applyTheme();
+  });
+
+  $("bgColorPicker").addEventListener("input", (e) => {
+    state.preset = "custom";
+    state.bgColor = e.target.value;
+    localStorage.setItem("rtm_preset", "custom");
+    localStorage.setItem("rtm_bg", state.bgColor);
+    applyTheme();
+  });
+
+  $("clockToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
-    state.demo = btn.dataset.mode === "demo";
-    localStorage.setItem("hud_demo", state.demo ? "1" : "0");
-    syncSegmented("modeToggle", "mode", btn.dataset.mode);
-    pushConfig();
+    state.clockFormat = btn.dataset.clock;
+    localStorage.setItem("rtm_clock", state.clockFormat);
+    syncSegmented("clockToggle", "clock", state.clockFormat);
+    updateClock();
   });
 
   $("unitToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     state.unit = btn.dataset.unit;
-    localStorage.setItem("hud_unit", state.unit);
+    localStorage.setItem("rtm_unit", state.unit);
     syncSegmented("unitToggle", "unit", state.unit);
+    renderWeather(state.lastWeather);
+  });
+
+  $("modeToggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    state.demo = btn.dataset.mode === "demo";
+    localStorage.setItem("rtm_demo", state.demo ? "1" : "0");
+    syncSegmented("modeToggle", "mode", btn.dataset.mode);
+    pushConfig();
+    fetchWeather(false);
   });
 
   $("intervalToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     state.interval = parseFloat(btn.dataset.interval);
-    localStorage.setItem("hud_interval", String(state.interval));
+    localStorage.setItem("rtm_interval", String(state.interval));
     syncSegmented("intervalToggle", "interval", btn.dataset.interval);
     pushConfig();
   });
 
-  $("procSortToggle").addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    state.sort = btn.dataset.sort;
-    localStorage.setItem("hud_sort", state.sort);
-    syncSegmented("procSortToggle", "sort", state.sort);
-    pushConfig();
-  });
-
-  syncSegmented("modeToggle", "mode", state.demo ? "demo" : "live");
+  // Initialize UI state
+  $("weatherLocInput").value = state.location;
+  syncSegmented("clockToggle", "clock", state.clockFormat);
   syncSegmented("unitToggle", "unit", state.unit);
+  syncSegmented("modeToggle", "mode", state.demo ? "demo" : "live");
   syncSegmented("intervalToggle", "interval", String(state.interval));
-  syncSegmented("procSortToggle", "sort", state.sort);
+  applyTheme();
 
   connectWS();
+  fetchWeather(false);
+  setInterval(() => fetchWeather(false), 10 * 60 * 1000);
 })();

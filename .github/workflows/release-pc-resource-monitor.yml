@@ -1,4 +1,4 @@
-name: Build & Release PC Resource Monitor
+name: Build & Release RigTach Metrix
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. pc-resource-monitor-v1.0.2)"
+        description: "Release tag (e.g. pc-resource-monitor-v1.1.0)"
         required: false
 
 permissions:
@@ -60,12 +60,12 @@ jobs:
           pip install -r requirements.txt pyinstaller
           python launcher.py --make-icon
 
-      - name: Build standalone PCResourceMonitor.exe
+      - name: Build standalone RigTachMetrix.exe
         if: steps.meta.outputs.should_release == 'True'
         working-directory: projects/pc-resource-monitor
         run: |
           pyinstaller --noconfirm --onedir --windowed `
-            --name PCResourceMonitor `
+            --name RigTachMetrix `
             --icon hud_icon.ico `
             --add-data "frontend;frontend" `
             --add-data "VERSION;." `
@@ -86,17 +86,21 @@ jobs:
         run: |
           choco install innosetup -y --no-progress
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.meta.outputs.version }}" installer.iss
+          Copy-Item dist\RigTachMetrix-Setup.exe dist\PCResourceMonitor-Setup.exe -Force
 
       - name: Publish GitHub Release
         if: steps.meta.outputs.should_release == 'True'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: PC Resource Monitor (${{ steps.meta.outputs.tag }})
+          name: RigTach Metrix (v${{ steps.meta.outputs.version }})
           make_latest: false
-          files: projects/pc-resource-monitor/dist/PCResourceMonitor-Setup.exe
+          files: |
+            projects/pc-resource-monitor/dist/RigTachMetrix-Setup.exe
+            projects/pc-resource-monitor/dist/PCResourceMonitor-Setup.exe
           body: |
-            Standalone Windows 10/11 installer for the **515 × 1920 PC Resource Monitor** floating HUD widget.
+            Standalone Windows 10/11 installer for **RigTach Metrix** (`515 × 1920` floating telemetry HUD).
+            - Large, floor-readable **Clock** & **Weather** widgets (custom city/ZIP location)
+            - Full **Color Theme** presets + custom Primary, Secondary, and Card Background pickers
+            - Live **CPU**, **NVIDIA GPU**, **RAM**, and **Network I/O** telemetry
             - Automatic silent self-updates via GitHub Releases
-            - Frameless transparent WebView2 widget with System Tray controls
-            - Automatic Per-Monitor DPI scaling and portrait monitor detection
