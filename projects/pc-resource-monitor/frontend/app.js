@@ -273,6 +273,35 @@
     }
   }
 
+  function renderFans(fans) {
+    const grid = $("fansGrid");
+    const badge = $("fansSource");
+    if (!fans || !fans.available || !fans.items || fans.items.length === 0) {
+      badge.textContent = "NO LHM";
+      grid.innerHTML = `<div class="fans-empty">Run LibreHardwareMonitor for CPU &amp; case fan RPM</div>`;
+      return;
+    }
+
+    const srcLabels = {
+      "lhm-http": "LHM WEB",
+      "lhm-wmi": "LHM WMI",
+      psutil: "SENSORS",
+      demo: "DEMO",
+    };
+    badge.textContent = srcLabels[fans.source] || "ACTIVE";
+
+    const items = fans.items.slice(0, 4);
+    grid.innerHTML = items
+      .map(
+        (f) => `
+        <div class="fan-tile">
+          <span class="fan-name">${f.name}</span>
+          <span class="fan-rpm">${f.rpm.toLocaleString()}<span class="rpm-unit">RPM</span></span>
+        </div>`
+      )
+      .join("");
+  }
+
   function renderTelemetry(data) {
     // Header
     $("sysMeta").textContent = `${data.system.hostname.toUpperCase()} • Up ${formatUptime(data.system.uptime_sec)}`;
@@ -312,6 +341,9 @@
 
     $("vramText").textContent = `${gpu.vram_used_gb.toFixed(1)} / ${gpu.vram_total_gb.toFixed(1)} GB (${Math.round(gpu.vram_percent)}%)`;
     $("vramBar").style.width = `${gpu.vram_percent}%`;
+
+    // Cooling & Fans
+    renderFans(data.fans);
 
     // RAM
     const mem = data.memory;

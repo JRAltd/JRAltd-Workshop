@@ -14,6 +14,8 @@ from typing import Any
 
 import psutil
 
+from backend.sensors import HardwareSensorReader
+
 
 def _bytes_to_gb(value: int | float) -> float:
     return round(value / (1024**3), 2)
@@ -53,6 +55,7 @@ class SystemTelemetryCollector:
         self._cpu_model = _get_cpu_model()
         self._hostname = socket.gethostname()
         self._os_label = f"{platform.system()} {platform.release()}"
+        self._sensors = HardwareSensorReader()
         # Prime cpu_percent so the first real call returns valid deltas
         psutil.cpu_percent(interval=None, percpu=True)
 
@@ -358,6 +361,16 @@ class DemoTelemetryGenerator:
                 "clock_mhz": round(1850 + (gpu_now * 7.5)),
                 "mem_clock_mhz": 11200,
                 "fan_percent": round(32 + (gpu_now * 0.45)),
+            },
+            "fans": {
+                "available": True,
+                "source": "demo",
+                "items": [
+                    {"name": "CPU", "rpm": int(980 + cpu_now * 10.5)},
+                    {"name": "AIO PUMP", "rpm": int(2420 + random.uniform(-25, 25))},
+                    {"name": "CASE 1", "rpm": int(860 + gpu_now * 6.0)},
+                    {"name": "CASE 2", "rpm": int(820 + gpu_now * 5.5)},
+                ],
             },
             "memory": {
                 "used_gb": round(self._ram, 2),
