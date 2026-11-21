@@ -371,10 +371,48 @@
     renderSparkline("netUpLine", null, state.history.netUp, 440, 48, netMax);
   }
 
+  function applyServerSettings(cfg) {
+    if (!cfg || typeof cfg !== "object") return;
+    const prevLoc = state.location;
+    const prevDemo = state.demo;
+
+    if (cfg.location) state.location = cfg.location;
+    if (cfg.preset) state.preset = cfg.preset;
+    if (cfg.primaryColor) state.primaryColor = cfg.primaryColor;
+    if (cfg.secondaryColor) state.secondaryColor = cfg.secondaryColor;
+    if (cfg.bgColor) state.bgColor = cfg.bgColor;
+    if (cfg.clockFormat) state.clockFormat = cfg.clockFormat;
+    if (cfg.unit) state.unit = cfg.unit;
+    if (typeof cfg.demo === "boolean" && params.get("demo") !== "1") state.demo = cfg.demo;
+    if (typeof cfg.interval === "number") state.interval = cfg.interval;
+
+    $("weatherLocInput").value = state.location;
+    syncSegmented("clockToggle", "clock", state.clockFormat);
+    syncSegmented("unitToggle", "unit", state.unit);
+    syncSegmented("modeToggle", "mode", state.demo ? "demo" : "live");
+    syncSegmented("intervalToggle", "interval", String(state.interval));
+    applyTheme();
+    updateClock();
+    renderWeather(state.lastWeather);
+
+    if (state.location !== prevLoc || state.demo !== prevDemo) {
+      fetchWeather(false);
+    }
+  }
+
+  function saveServerSettings(patch) {
+    fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).catch(() => {});
+  }
+
   // WebSocket Lifecycle
   function connectWS() {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/ws/telemetry?demo=${state.demo}&interval=${state.interval}`;
+    const qs = params.get("demo") === "1" ? "?demo=true" : "";
+    const url = `${proto}//${window.location.host}/ws/telemetry${qs}`;
     const dot = $("connDot");
     dot.className = "status-dot";
 
@@ -388,6 +426,10 @@
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.type === "settings") {
+          applyServerSettings(data.settings);
+          return;
+        }
         renderTelemetry(data);
       } catch (err) {
         console.error("Telemetry parse error:", err);
@@ -402,17 +444,6 @@
     ws.onerror = () => {
       ws.close();
     };
-  }
-
-  function pushConfig() {
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-      state.ws.send(
-        JSON.stringify({
-          demo: state.demo,
-          interval: state.interval,
-        })
-      );
-    }
   }
 
   // Settings & Controls
@@ -441,7 +472,7 @@
     const val = $("weatherLocInput").value.trim();
     if (!val) return;
     state.location = val;
-    localStorage.setItem("rtm_location", val);
+    saveServerSettings({ location: val });
     fetchWeather(true);
   }
 
@@ -460,62 +491,60 @@
     state.primaryColor = p.primary;
     state.secondaryColor = p.secondary;
     state.bgColor = p.bg;
-    localStorage.setItem("rtm_preset", state.preset);
-    localStorage.setItem("rtm_primary", state.primaryColor);
-    localStorage.setItem("rtm_secondary", state.secondaryColor);
-    localStorage.setItem("rtm_bg", state.bgColor);
     applyTheme();
+    saveServerSettings({
+      preset: state.preset,
+      primaryColor: state.primaryColor,
+      secondaryColor: state.secondaryColor,
+      bgColor: state.bgColor,
+    });
   });
 
   $("primaryColorPicker").addEventListener("input", (e) => {
     state.preset = "custom";
     state.primaryColor = e.target.value;
-    localStorage.setItem("rtm_preset", "custom");
-    localStorage.setItem("rtm_primary", state.primaryColor);
     applyTheme();
+    saveServerSettings({ preset: "custom", primaryColor: state.primaryColor });
   });
 
   $("secondaryColorPicker").addEventListener("input", (e) => {
     state.preset = "custom";
     state.secondaryColor = e.target.value;
-    localStorage.setItem("rtm_preset", "custom");
-    localStorage.setItem("rtm_secondary", state.secondaryColor);
     applyTheme();
+    saveServerSettings({ preset: "custom", secondaryColor: state.secondaryColor });
   });
 
   $("bgColorPicker").addEventListener("input", (e) => {
     state.preset = "custom";
     state.bgColor = e.target.value;
-    localStorage.setItem("rtm_preset", "custom");
-    localStorage.setItem("rtm_bg", state.bgColor);
     applyTheme();
+    saveServerSettings({ preset: "custom", bgColor: state.bgColor });
   });
 
   $("clockToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     state.clockFormat = btn.dataset.clock;
-    localStorage.setItem("rtm_clock", state.clockFormat);
     syncSegmented("clockToggle", "clock", state.clockFormat);
     updateClock();
+    saveServerSettings({ clockFormat: state.clockFormat });
   });
 
   $("unitToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     state.unit = btn.dataset.unit;
-    localStorage.setItem("rtm_unit", state.unit);
     syncSegmented("unitToggle", "unit", state.unit);
     renderWeather(state.lastWeather);
+    saveServerSettings({ unit: state.unit });
   });
 
   $("modeToggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     state.demo = btn.dataset.mode === "demo";
-    localStorage.setItem("rtm_demo", state.demo ? "1" : "0");
     syncSegmented("modeToggle", "mode", btn.dataset.mode);
-    pushConfig();
+    saveServerSettings({ demo: state.demo });
     fetchWeather(false);
   });
 
@@ -523,9 +552,8 @@
     const btn = e.target.closest("button");
     if (!btn) return;
     state.interval = parseFloat(btn.dataset.interval);
-    localStorage.setItem("rtm_interval", String(state.interval));
     syncSegmented("intervalToggle", "interval", btn.dataset.interval);
-    pushConfig();
+    saveServerSettings({ interval: state.interval });
   });
 
   // Initialize UI state

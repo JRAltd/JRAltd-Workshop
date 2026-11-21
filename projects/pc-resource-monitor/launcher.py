@@ -333,10 +333,50 @@ def _check_and_install_update(on_before_exit=None, icon=None, manual: bool = Fal
     os._exit(0)
 
 
+def _primary_settings_rect(
+    monitors: list[dict[str, int | bool]], w: int = 500, h: int = 680
+) -> tuple[int, int, int, int]:
+    """Return (x, y, w, h) centered on the Windows primary monitor."""
+    primary = next((m for m in monitors if m["primary"]), monitors[0] if monitors else None)
+    if not primary:
+        return (200, 140, w, h)
+    px = int(primary["x"])
+    py = int(primary["y"])
+    pw = int(primary["width"])
+    ph = int(primary["height"])
+    sx = px + max(0, (pw - w) // 2)
+    sy = py + max(0, (ph - h) // 2)
+    return (sx, sy, w, h)
+
+
+def _open_settings_browser(settings_url: str, monitors: list[dict[str, int | bool]]) -> None:
+    """Open the Settings window on the primary monitor via Edge/Chrome --app."""
+    browser = find_browser()
+    if not browser:
+        return
+    sx, sy, sw, sh = _primary_settings_rect(monitors)
+    profile_dir = Path(tempfile.gettempdir()) / "rigtach-metrix-settings-profile"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.Popen(
+        [
+            browser,
+            f"--user-data-dir={profile_dir}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--new-window",
+            f"--app={settings_url}",
+            f"--window-position={sx},{sy}",
+            f"--window-size={sw},{sh}",
+        ]
+    )
+
+
 def _run_tray(
     hwnd: int | None,
     target: dict[str, int | bool] | None,
     browser_proc: subprocess.Popen[bytes] | None,
+    settings_url: str,
+    monitors: list[dict[str, int | bool]],
 ) -> None:
     """Run the Windows System Tray icon (right side of taskbar)."""
     import ctypes
@@ -375,6 +415,9 @@ def _run_tray(
             user32.ShowWindow(hwnd, SW_SHOW)
             visible[0] = True
 
+    def on_settings(icon, item):
+        _open_settings_browser(settings_url, monitors)
+
     def _cleanup():
         if hwnd:
             user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
@@ -393,6 +436,7 @@ def _run_tray(
         icon.stop()
 
     menu = pystray.Menu(
+        pystray.MenuItem("Settings...", on_settings),
         pystray.MenuItem("Show / Hide HUD", on_toggle, default=True),
         pystray.MenuItem("Re-snap to Monitor", on_resnap),
         pystray.MenuItem(f"Check for Updates (v{get_app_version()})", on_update),
@@ -400,7 +444,7 @@ def _run_tray(
         pystray.MenuItem("Quit", on_quit),
     )
 
-    icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
+    icon = pystray.Icon("rigtach_metrix", _build_tray_image(), "RigTach Metrix (515×1920)", menu)
     if getattr(sys, "frozen", False):
         threading.Timer(
             4.0,
@@ -412,7 +456,9 @@ def _run_tray(
 
 def _launch_widget_webview(
     url: str,
+    settings_url: str,
     target: dict[str, int | bool] | None,
+    monitors: list[dict[str, int | bool]],
     use_tray: bool,
 ) -> bool:
     """Launch a true frameless, transparent desktop widget using pywebview (WebView2)."""
@@ -428,7 +474,7 @@ def _launch_widget_webview(
 
     widget_url = f"{url}{'&' if '?' in url else '?'}widget=1"
     window = webview.create_window(
-        "PC Resource Monitor",
+        "RigTach Metrix",
         widget_url,
         x=x,
         y=y,
@@ -440,9 +486,10 @@ def _launch_widget_webview(
     )
 
     tray_icon = [None]
+    settings_win = [None]
 
     def _on_loaded():
-        hwnd = _snap_window_to_monitor("PC Resource Monitor", {"x": x, "y": y, "width": w, "height": h}, borderless=True, timeout=4.0)
+        hwnd = _snap_window_to_monitor("RigTach Metrix", {"x": x, "y": y, "width": w, "height": h}, borderless=True, timeout=4.0)
         if use_tray and sys.platform == "win32":
             try:
                 import ctypes
@@ -465,7 +512,39 @@ def _launch_widget_webview(
                         user32.ShowWindow(hwnd, SW_SHOW)
                         visible[0] = True
 
+                def on_settings(icon, item):
+                    try:
+                        if settings_win[0] is not None:
+                            try:
+                                settings_win[0].restore()
+                                return
+                            except Exception:
+                                settings_win[0] = None
+                        sx, sy, sw, sh = _primary_settings_rect(monitors)
+                        swin = webview.create_window(
+                            "RigTach Metrix — Settings",
+                            settings_url,
+                            x=sx,
+                            y=sy,
+                            width=sw,
+                            height=sh,
+                            resizable=False,
+                        )
+
+                        def _on_closed():
+                            settings_win[0] = None
+
+                        swin.events.closed += _on_closed
+                        settings_win[0] = swin
+                    except Exception:
+                        _open_settings_browser(settings_url, monitors)
+
                 def _cleanup():
+                    try:
+                        if settings_win[0] is not None:
+                            settings_win[0].destroy()
+                    except Exception:
+                        pass
                     try:
                         window.destroy()
                     except Exception:
@@ -483,13 +562,14 @@ def _launch_widget_webview(
                     _cleanup()
 
                 menu = pystray.Menu(
+                    pystray.MenuItem("Settings...", on_settings),
                     pystray.MenuItem("Show / Hide Widget", on_toggle, default=True),
                     pystray.MenuItem("Re-snap to Monitor", on_resnap),
                     pystray.MenuItem(f"Check for Updates (v{get_app_version()})", on_update),
                     pystray.Menu.SEPARATOR,
                     pystray.MenuItem("Quit", on_quit),
                 )
-                icon = pystray.Icon("pc_resource_monitor", _build_tray_image(), "PC Resource Monitor (515×1920)", menu)
+                icon = pystray.Icon("rigtach_metrix", _build_tray_image(), "RigTach Metrix (515×1920)", menu)
                 tray_icon[0] = icon
                 icon.run_detached()
                 if getattr(sys, "frozen", False):
@@ -549,7 +629,9 @@ def main() -> None:
     if args.demo:
         os.environ["RESOURCE_MONITOR_DEMO"] = "1"
 
-    url = f"http://{args.host}:{args.port}/"
+    base_url = f"http://{args.host}:{args.port}"
+    url = f"{base_url}/"
+    settings_url = f"{base_url}/settings"
     if args.demo:
         url += "?demo=1"
 
@@ -563,7 +645,7 @@ def main() -> None:
     )
     server_thread.start()
 
-    if not wait_for_server(f"http://{args.host}:{args.port}/api/telemetry"):
+    if not wait_for_server(f"{base_url}/api/telemetry"):
         print("Failed to start telemetry server.")
         sys.exit(1)
 
@@ -576,7 +658,7 @@ def main() -> None:
     )
 
     if not args.no_browser and not args.browser and sys.platform == "win32":
-        if _launch_widget_webview(url, target, use_tray=not args.no_tray):
+        if _launch_widget_webview(url, settings_url, target, monitors, use_tray=not args.no_tray):
             return
 
     browser_proc: subprocess.Popen[bytes] | None = None
@@ -619,7 +701,7 @@ def main() -> None:
 
     if sys.platform == "win32" and not args.no_tray:
         try:
-            _run_tray(hwnd, target, browser_proc)
+            _run_tray(hwnd, target, browser_proc, settings_url, monitors)
             return
         except Exception as exc:
             print(f"Tray icon unavailable ({exc}); running in console mode.")

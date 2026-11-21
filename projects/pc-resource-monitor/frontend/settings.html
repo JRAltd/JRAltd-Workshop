@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RigTach Metrix — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #070b11;
+      --surface: #0e1622;
+      --inset: rgba(5, 9, 15, 0.72);
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --accent-2: #10b981;
+      --coral: #ef4444;
+      --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Consolas", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .title {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .live-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-2);
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      padding: 4px 9px;
+      border-radius: 6px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 15px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .loc-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .text-input {
+      flex: 1;
+      background: var(--inset);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .text-input:focus { border-color: var(--accent); }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      background: var(--accent);
+      color: #041017;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+
+    .hint {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-2);
+      min-height: 15px;
+    }
+
+    .hint.error { color: var(--coral); }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 9px;
+    }
+
+    .swatch {
+      height: 32px;
+      border-radius: 9px;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      background: var(--sw);
+      cursor: pointer;
+      transition: transform 0.14s ease, border-color 0.14s ease;
+    }
+
+    .swatch:hover { transform: scale(1.06); }
+    .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25); }
+
+    .pickers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .color-box {
+      background: var(--inset);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .color-box input[type="color"] {
+      width: 28px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .seg {
+      display: inline-flex;
+      background: var(--inset);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .seg button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .seg button.active {
+      background: rgba(34, 211, 238, 0.18);
+      color: var(--accent);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="title">RIGTACH METRIX</div>
+        <div class="subtitle">Changes apply live to your 515×1920 widget</div>
+      </div>
+      <span class="live-pill">LIVE SYNC</span>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">WEATHER LOCATION</div>
+      <div class="loc-row">
+        <input type="text" id="locInput" class="text-input" placeholder="City, State or ZIP (e.g. Des Moines, IA)" />
+        <button type="button" id="locSave" class="btn">Save</button>
+      </div>
+      <div class="hint" id="locHint"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">COLOR THEME</div>
+      <div class="presets" id="presets">
+        <button type="button" class="swatch" data-preset="cyan" title="Cyan Pulse" style="--sw:#22d3ee"></button>
+        <button type="button" class="swatch" data-preset="emerald" title="Emerald Matrix" style="--sw:#10b981"></button>
+        <button type="button" class="swatch" data-preset="amber" title="Amber Forge" style="--sw:#f59e0b"></button>
+        <button type="button" class="swatch" data-preset="crimson" title="Crimson Red" style="--sw:#f43f5e"></button>
+        <button type="button" class="swatch" data-preset="cobalt" title="Cobalt Blue" style="--sw:#3b82f6"></button>
+        <button type="button" class="swatch" data-preset="arctic" title="Arctic Ice" style="--sw:#e2e8f0"></button>
+      </div>
+      <div class="pickers">
+        <label class="color-box"><span>Primary</span><input type="color" id="primaryPicker" /></label>
+        <label class="color-box"><span>Secondary</span><input type="color" id="secondaryPicker" /></label>
+        <label class="color-box"><span>Card BG</span><input type="color" id="bgPicker" /></label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">DISPLAY &amp; TELEMETRY</div>
+      <div class="row">
+        <span>Clock Format</span>
+        <div class="seg" id="clockSeg">
+          <button type="button" data-val="12">12H</button>
+          <button type="button" data-val="24">24H</button>
+        </div>
+      </div>
+      <div class="row">
+        <span>Temperature Unit</span>
+        <div class="seg" id="unitSeg">
+          <button type="button" data-val="F">°F</button>
+          <button type="button" data-val="C">°C</button>
+        </div>
+      </div>
+      <div class="row">
+        <span>Telemetry Source</span>
+        <div class="seg" id="modeSeg">
+          <button type="button" data-val="live">Live</button>
+          <button type="button" data-val="demo">Demo</button>
+        </div>
+      </div>
+      <div class="row">
+        <span>Poll Interval</span>
+        <div class="seg" id="intervalSeg">
+          <button type="button" data-val="0.5">0.5s</button>
+          <button type="button" data-val="1">1.0s</button>
+          <button type="button" data-val="2">2.0s</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Close this window anytime — your settings are saved automatically.</div>
+  </div>
+
+  <script>
+    const PRESETS = {
+      cyan: { primaryColor: "#22d3ee", secondaryColor: "#10b981", bgColor: "#0d141e" },
+      emerald: { primaryColor: "#10b981", secondaryColor: "#34d399", bgColor: "#0a1714" },
+      amber: { primaryColor: "#f59e0b", secondaryColor: "#fb923c", bgColor: "#18130a" },
+      crimson: { primaryColor: "#f43f5e", secondaryColor: "#fb7185", bgColor: "#1a0c12" },
+      cobalt: { primaryColor: "#3b82f6", secondaryColor: "#38bdf8", bgColor: "#0b1322" },
+      arctic: { primaryColor: "#e2e8f0", secondaryColor: "#38bdf8", bgColor: "#101620" },
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function syncSeg(id, val) {
+      Array.from($(id).querySelectorAll("button")).forEach((b) => {
+        b.classList.toggle("active", b.dataset.val === String(val));
+      });
+    }
+
+    function renderUI(cfg) {
+      document.documentElement.style.setProperty("--accent", cfg.primaryColor);
+      document.documentElement.style.setProperty("--accent-2", cfg.secondaryColor);
+      $("locInput").value = cfg.location || "";
+      $("primaryPicker").value = cfg.primaryColor;
+      $("secondaryPicker").value = cfg.secondaryColor;
+      $("bgPicker").value = cfg.bgColor;
+      Array.from($("presets").querySelectorAll(".swatch")).forEach((b) => {
+        b.classList.toggle("active", b.dataset.preset === cfg.preset);
+      });
+      syncSeg("clockSeg", cfg.clockFormat);
+      syncSeg("unitSeg", cfg.unit);
+      syncSeg("modeSeg", cfg.demo ? "demo" : "live");
+      syncSeg("intervalSeg", String(cfg.interval));
+    }
+
+    async function patchSettings(patch) {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const updated = await res.json();
+      renderUI(updated);
+      return updated;
+    }
+
+    async function saveLocation() {
+      const loc = $("locInput").value.trim();
+      if (!loc) return;
+      const hint = $("locHint");
+      hint.textContent = "Checking location...";
+      hint.classList.remove("error");
+      await patchSettings({ location: loc });
+      try {
+        const res = await fetch(`/api/weather?location=${encodeURIComponent(loc)}`);
+        const w = await res.json();
+        if (w.ok) {
+          hint.textContent = `Saved: ${w.location}`;
+        } else {
+          hint.textContent = w.error || "Location not found";
+          hint.classList.add("error");
+        }
+      } catch {
+        hint.textContent = "Saved (weather offline)";
+      }
+    }
+
+    $("locSave").addEventListener("click", saveLocation);
+    $("locInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveLocation(); });
+
+    $("presets").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-preset]");
+      if (!btn) return;
+      const p = PRESETS[btn.dataset.preset];
+      if (!p) return;
+      patchSettings({ preset: btn.dataset.preset, ...p });
+    });
+
+    $("primaryPicker").addEventListener("input", (e) => patchSettings({ preset: "custom", primaryColor: e.target.value }));
+    $("secondaryPicker").addEventListener("input", (e) => patchSettings({ preset: "custom", secondaryColor: e.target.value }));
+    $("bgPicker").addEventListener("input", (e) => patchSettings({ preset: "custom", bgColor: e.target.value }));
+
+    $("clockSeg").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) patchSettings({ clockFormat: b.dataset.val });
+    });
+    $("unitSeg").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) patchSettings({ unit: b.dataset.val });
+    });
+    $("modeSeg").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) patchSettings({ demo: b.dataset.val === "demo" });
+    });
+    $("intervalSeg").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) patchSettings({ interval: parseFloat(b.dataset.val) });
+    });
+
+    fetch("/api/settings").then((r) => r.json()).then(renderUI);
+  </script>
+</body>
+</html>
